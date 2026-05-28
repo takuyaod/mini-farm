@@ -1,0 +1,24 @@
+{
+  "name": "mini-farm",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${localEnv:HOME}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock,target=/home/vscode/.1password/agent.sock,type=bind"
+  ],
+  "postCreateCommand": "cd app && npm install && cd ../emulator && npm install",
+  "postStartCommand": "supabase start && docker compose up -d",
+  "forwardPorts": [3000, 3001, 54321, 54323],
+  "portsAttributes": {
+    "3000":  { "label": "Next.js" },
+    "3001":  { "label": "Emulator API" },
+    "54321": { "label": "Supabase API" },
+    "54323": { "label": "Supabase Studio" }
+  },
+  "remoteEnv": {
+    "NEXT_PUBLIC_SUPABASE_URL": "http://host.docker.internal:54321",
+    "SUPABASE_URL": "http://host.docker.internal:54321",
+    "SSH_AUTH_SOCK": "/home/vscode/.1password/agent.sock"
+  }
+}
