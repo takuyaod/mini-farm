@@ -1,0 +1,22 @@
+# 環境変数（シークレットを含む）
+.env
+.env.local
+.env.*.local
+
+# ファームウェア（APIキーを含む）
+firmware/platformio.ini
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Next.js
+app/.next/
+app/out/
+
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+
+# OS
+.DS_Store
