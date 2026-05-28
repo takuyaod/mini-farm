@@ -438,15 +438,14 @@ cp .env.example .env
 **毎回の起動手順**
 
 ```bash
-# 1. Supabase を起動（Supabase コンテナ群がホスト上で起動する）
+# 1. Supabase を起動
 supabase start
 
-# 2. .env の SUPABASE_PUBLISHABLE_KEY を更新（初回のみ不要の場合もある）
-# supabase start の出力から "anon key" を .env に貼り付ける
-
-# 3. Next.js・エミュレータを起動
+# 2. Next.js・エミュレータを起動
 docker compose up -d
 ```
+
+> anon key はローカル Supabase では固定値のため、初回セットアップ後は `.env` の書き換えは不要。
 
 **環境変数（`.env`）**
 
