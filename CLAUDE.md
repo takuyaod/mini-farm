@@ -34,7 +34,30 @@ docs/         仕様書
 
 ## 開発環境の起動
 
+### DevContainer（推奨）
+
 DevContainerを開くだけで全サービスが自動起動する（`postStartCommand`で`supabase start && docker compose up -d`が実行される）。
+
+### ローカルDocker Compose（DevContainer代替）
+
+DevContainerが使えない場合は以下の手順で起動する。
+
+```bash
+# 初回のみ: Supabase CLI をホストにインストール
+brew install supabase/tap/supabase
+
+# 初回のみ: .env を作成
+cp .env.example .env
+# .env を開いて SUPABASE_PUBLISHABLE_KEY を記入する
+
+# Supabase を起動（表示される anon key を .env の SUPABASE_PUBLISHABLE_KEY に記入）
+supabase start
+
+# Next.js・エミュレータを起動
+docker compose up -d
+```
+
+### ポート一覧
 
 | ポート | サービス |
 |---|---|

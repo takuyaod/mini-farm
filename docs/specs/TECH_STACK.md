@@ -415,6 +415,51 @@ services:
     restart: unless-stopped
 ```
 
+### ローカル Docker Compose 起動手順（DevContainer 代替）
+
+DevContainer が使えない場合は、ホストに Supabase CLI をインストールして `docker compose up` だけで起動できる。
+
+**前提条件**
+
+- Docker Desktop がインストール済みであること
+
+**初回セットアップ**
+
+```bash
+# 1. Supabase CLI をホストにインストール（初回のみ）
+brew install supabase/tap/supabase
+
+# 2. .env を作成
+cp .env.example .env
+# .env を開いて SUPABASE_PUBLISHABLE_KEY を記入する
+# supabase start 実行後に表示される "anon key" を使用する
+```
+
+**毎回の起動手順**
+
+```bash
+# 1. Supabase を起動（Supabase コンテナ群がホスト上で起動する）
+supabase start
+
+# 2. .env の SUPABASE_PUBLISHABLE_KEY を更新（初回のみ不要の場合もある）
+# supabase start の出力から "anon key" を .env に貼り付ける
+
+# 3. Next.js・エミュレータを起動
+docker compose up -d
+```
+
+**環境変数（`.env`）**
+
+| 変数名 | 内容 |
+|---|---|
+| `SUPABASE_PUBLISHABLE_KEY` | `supabase start` で表示される anon key |
+| `DEVICE_API_KEY` | エミュレータ用デバイスキー（開発用: `dev-api-key-001`） |
+
+> `.env` は `.gitignore` に登録済みのため、リポジトリにコミットされない。  
+> `.env.example` をコピーして使用すること。
+
+---
+
 ### 開発用 API キーの管理（seed.sql）
 
 ゾーン管理画面（P2）が完成する前にエミュレータ・実機テストを行えるよう、  
