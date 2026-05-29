@@ -161,6 +161,7 @@ CREATE UNIQUE INDEX uq_sensor_per_device
     ON sensors (device_id, sensor_type_id)
     WHERE is_active = true;
 
+-- 1ゾーン1植物の同時栽培をDBレベルで保証（harvested_at IS NULL = 栽培中）
 CREATE UNIQUE INDEX uq_zone_plants_active
     ON zone_plants (zone_id)
     WHERE harvested_at IS NULL;
@@ -283,7 +284,17 @@ CREATE POLICY "owner only" ON alerts
 
 -- ============================================================
 -- pg_cron: idempotency_key を 24 時間後に NULL へ更新（毎日 03:00 UTC）
+-- supabase db reset での再マイグレーション時に重複登録が発生しないよう
+-- 既存ジョブを先に削除してから再登録する
 -- ============================================================
+
+DO $$
+BEGIN
+  PERFORM cron.unschedule('cleanup-idempotency-keys');
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END;
+$$;
 
 SELECT cron.schedule(
     'cleanup-idempotency-keys',
