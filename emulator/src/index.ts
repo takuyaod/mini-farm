@@ -75,6 +75,7 @@ app.get("/status", (_req, res) => {
   res.json({ status: state, interval_ms: INTERVAL_MS });
 });
 
+// 開発専用サービス。本番環境・外部ネットワークには公開しないこと
 app.listen(PORT, () => {
   console.log(`Emulator listening on port ${PORT} (stopped)`);
 });
