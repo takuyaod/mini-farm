@@ -16,6 +16,12 @@ interface RequestBody {
   readings: SensorReading[]
 }
 
+interface ProcessedSensor {
+  sensor_type: string
+  sensor_id: string
+  value: number
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input)
   const hashBuffer = await crypto.subtle.digest("SHA-256", data)
@@ -36,10 +42,14 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  )
+  // 環境変数の存在確認（未設定時はフェイルファスト）
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+  if (!supabaseUrl || !serviceRoleKey) {
+    return jsonResponse({ error: "Server misconfiguration" }, 500)
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
 
   // 1. APIキー認証
   const authHeader = req.headers.get("Authorization")
@@ -48,6 +58,10 @@ Deno.serve(async (req) => {
   }
 
   const apiKey = authHeader.slice(7)
+  if (!apiKey) {
+    return jsonResponse({ error: "Unauthorized" }, 401)
+  }
+
   const apiKeyHash = await sha256Hex(apiKey)
 
   const { data: device } = await supabase
@@ -70,6 +84,10 @@ Deno.serve(async (req) => {
 
   if (!Array.isArray(body.readings) || body.readings.length === 0) {
     return jsonResponse({ error: "readings array is required" }, 400)
+  }
+
+  if (body.timestamp && isNaN(Date.parse(body.timestamp))) {
+    return jsonResponse({ error: "Invalid timestamp format" }, 400)
   }
 
   const recordedAt = body.timestamp ?? new Date().toISOString()
@@ -113,42 +131,44 @@ Deno.serve(async (req) => {
   }
 
   // 4. センサー解決・未登録センサーは自動登録
-  interface ProcessedSensor {
-    sensor_type: string
-    sensor_id: string
-    value: number
-  }
-  const processedSensors: ProcessedSensor[] = []
+  // 対象センサー種別を一括取得してN+1クエリを回避する
+  const sensorTypes = toProcess.map((r) => r.sensor_type)
+  const { data: existingSensors } = await supabase
+    .from("sensors")
+    .select("id, sensor_type_id")
+    .eq("device_id", device.id)
+    .in("sensor_type_id", sensorTypes)
+    .eq("is_active", true)
 
-  for (const reading of toProcess) {
-    const { data: sensor } = await supabase
+  const existingSensorMap = new Map(
+    (existingSensors ?? []).map((s: { id: string; sensor_type_id: string }) => [s.sensor_type_id, s.id]),
+  )
+
+  // 未登録センサーを一括登録
+  const missingSensorTypes = toProcess
+    .filter((r) => !existingSensorMap.has(r.sensor_type))
+    .map((r) => r.sensor_type)
+
+  if (missingSensorTypes.length > 0) {
+    const { data: newSensors, error: insertError } = await supabase
       .from("sensors")
-      .select("id")
-      .eq("device_id", device.id)
-      .eq("sensor_type_id", reading.sensor_type)
-      .eq("is_active", true)
-      .maybeSingle()
+      .insert(missingSensorTypes.map((sensorTypeId) => ({ device_id: device.id, sensor_type_id: sensorTypeId })))
+      .select("id, sensor_type_id")
 
-    let sensorId: string
-
-    if (sensor) {
-      sensorId = sensor.id
-    } else {
-      const { data: newSensor, error: insertError } = await supabase
-        .from("sensors")
-        .insert({ device_id: device.id, sensor_type_id: reading.sensor_type })
-        .select("id")
-        .single()
-
-      if (insertError || !newSensor) {
-        skipped.push({ sensor_type: reading.sensor_type, reason: "failed to register sensor" })
-        continue
+    if (!insertError && newSensors) {
+      for (const s of newSensors as { id: string; sensor_type_id: string }[]) {
+        existingSensorMap.set(s.sensor_type_id, s.id)
       }
-      sensorId = newSensor.id
+    } else {
+      for (const sensorType of missingSensorTypes) {
+        skipped.push({ sensor_type: sensorType, reason: "failed to register sensor" })
+      }
     }
-
-    processedSensors.push({ sensor_type: reading.sensor_type, sensor_id: sensorId, value: reading.value })
   }
+
+  const processedSensors: ProcessedSensor[] = toProcess
+    .filter((r) => existingSensorMap.has(r.sensor_type))
+    .map((r) => ({ sensor_type: r.sensor_type, sensor_id: existingSensorMap.get(r.sensor_type)!, value: r.value }))
 
   if (processedSensors.length === 0) {
     return jsonResponse({ accepted, skipped })
@@ -175,10 +195,14 @@ Deno.serve(async (req) => {
     )
   }
 
-  await supabase
+  const { error: updateDeviceError } = await supabase
     .from("devices")
     .update({ last_seen_at: new Date().toISOString() })
     .eq("id", device.id)
+
+  if (updateDeviceError) {
+    console.error("Failed to update last_seen_at:", updateDeviceError.message)
+  }
 
   processedSensors.forEach((ps) => accepted.push(ps.sensor_type))
 
@@ -204,6 +228,8 @@ Deno.serve(async (req) => {
         ]),
       )
 
+      // 閾値超過センサーを特定
+      const breachingSensors: { ps: ProcessedSensor; breachDirection: "high" | "low" }[] = []
       for (const ps of processedSensors) {
         const threshold = thresholdMap.get(ps.sensor_type)
         if (!threshold) continue
@@ -215,25 +241,37 @@ Deno.serve(async (req) => {
           breachDirection = "high"
         }
 
-        if (!breachDirection) continue
+        if (breachDirection) {
+          breachingSensors.push({ ps, breachDirection })
+        }
+      }
 
-        // アラートストーム防止：同一センサー・同一 alert_type の未解消アラートが存在すればスキップ
-        const { data: existingAlert } = await supabase
+      if (breachingSensors.length > 0) {
+        // アラートストーム防止：未解消アラートを一括取得してN+1クエリを回避
+        const breachingSensorIds = breachingSensors.map(({ ps }) => ps.sensor_id)
+        const { data: existingAlerts } = await supabase
           .from("alerts")
-          .select("id")
-          .eq("sensor_id", ps.sensor_id)
+          .select("sensor_id")
+          .in("sensor_id", breachingSensorIds)
           .eq("alert_type", "threshold_breach")
           .is("resolved_at", null)
-          .maybeSingle()
 
-        if (existingAlert) continue
+        const existingAlertSet = new Set(
+          (existingAlerts ?? []).map((a: { sensor_id: string }) => a.sensor_id),
+        )
 
-        await supabase.from("alerts").insert({
-          sensor_id: ps.sensor_id,
-          alert_type: "threshold_breach",
-          triggered_value: ps.value,
-          breach_direction: breachDirection,
-        })
+        const alertsToInsert = breachingSensors
+          .filter(({ ps }) => !existingAlertSet.has(ps.sensor_id))
+          .map(({ ps, breachDirection }) => ({
+            sensor_id: ps.sensor_id,
+            alert_type: "threshold_breach",
+            triggered_value: ps.value,
+            breach_direction: breachDirection,
+          }))
+
+        if (alertsToInsert.length > 0) {
+          await supabase.from("alerts").insert(alertsToInsert)
+        }
       }
     }
   }
