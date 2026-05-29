@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import {
   Dialog,
@@ -9,43 +9,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { createZone } from '../api/createZone'
+import { createZone } from '@/features/dashboard/api/createZone'
+import type { CreateZoneState } from '@/features/dashboard/api/createZone'
+
+const initialState: CreateZoneState = { success: false }
 
 export function AddZoneModal() {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [type, setType] = useState<'hydroponic' | 'soil'>('hydroponic')
-  const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [state, formAction, isPending] = useActionState(createZone, initialState)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) {
-      setError('ゾーン名を入力してください')
-      return
+  useEffect(() => {
+    if (state.success) {
+      setOpen(false)
     }
-    setError(null)
-    startTransition(async () => {
-      try {
-        await createZone({ name: name.trim(), type })
-        setOpen(false)
-        setName('')
-        setType('hydroponic')
-      } catch {
-        setError('ゾーンの作成に失敗しました。再度お試しください。')
-      }
-    })
-  }
+  }, [state.success])
 
   const handleOpenChange = (next: boolean) => {
-    if (!isPending) {
-      setOpen(next)
-      if (!next) {
-        setName('')
-        setType('hydroponic')
-        setError(null)
-      }
-    }
+    if (!isPending) setOpen(next)
   }
 
   return (
@@ -60,16 +40,15 @@ export function AddZoneModal() {
         <DialogHeader>
           <DialogTitle>ゾーンを追加</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-4">
+        <form action={formAction} className="mt-2 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="zone-name" className="text-sm font-medium text-gray-700">
               ゾーン名 <span className="text-red-500">*</span>
             </label>
             <input
               id="zone-name"
+              name="name"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               placeholder="例: 温室A"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
@@ -82,10 +61,9 @@ export function AddZoneModal() {
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="radio"
-                  name="zone-type"
+                  name="type"
                   value="hydroponic"
-                  checked={type === 'hydroponic'}
-                  onChange={() => setType('hydroponic')}
+                  defaultChecked
                   className="accent-blue-600"
                 />
                 水耕
@@ -93,17 +71,15 @@ export function AddZoneModal() {
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="radio"
-                  name="zone-type"
+                  name="type"
                   value="soil"
-                  checked={type === 'soil'}
-                  onChange={() => setType('soil')}
                   className="accent-blue-600"
                 />
                 土壌
               </label>
             </div>
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {state.error && <p className="text-sm text-red-500">{state.error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
