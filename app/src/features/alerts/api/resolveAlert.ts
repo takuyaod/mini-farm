@@ -1,0 +1,20 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient, getUser } from '@/lib/supabase/server'
+
+export async function resolveAlert(alertId: string): Promise<void> {
+  const user = await getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('alerts')
+    .update({ resolved_at: new Date().toISOString() })
+    .eq('id', alertId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/alerts')
+  revalidatePath('/')
+}
