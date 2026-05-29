@@ -109,7 +109,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
     devices,
     sensors,
     unresolvedAlerts: allAlerts,
-    currentPlant: currentPlant as ZoneDetailData['currentPlant'],
+    currentPlant,
     isOffline,
   }
 }

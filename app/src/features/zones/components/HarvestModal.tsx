@@ -8,28 +8,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { harvestZonePlant, type HarvestState } from '../api/harvestZonePlant'
-import type { Plant, ZonePlant } from '../types'
+import { getDaysFromPlanting, formatPlantingDate } from '../utils'
+import type { ZonePlant } from '../types'
 
 type Props = {
   open: boolean
   onClose: () => void
-  zonePlant: ZonePlant & { plants: Plant }
+  zonePlant: ZonePlant
   zoneId: string
 }
 
 const initialState: HarvestState = { success: false }
-
-function getDaysFromPlanting(plantedAt: string): number {
-  return Math.floor((Date.now() - new Date(plantedAt).getTime()) / (1000 * 60 * 60 * 24))
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
 
 export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
   const [state, formAction, isPending] = useActionState(harvestZonePlant, initialState)
@@ -50,7 +39,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
         </DialogHeader>
         <div className="mt-2 space-y-4">
           <div className="rounded-md bg-gray-50 px-4 py-3 text-sm text-gray-600">
-            <p>植付日: {formatDate(zonePlant.planted_at)}</p>
+            <p>植付日: {formatPlantingDate(zonePlant.planted_at)}</p>
             <p>栽培日数: {days} 日</p>
           </div>
 

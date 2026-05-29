@@ -45,13 +45,14 @@ export async function getSensorReadings(
   const supabase = createClient()
   const since = new Date(Date.now() - PERIOD_INTERVALS[period]).toISOString()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('readings')
     .select('recorded_at, value')
     .eq('sensor_id', sensorId)
     .gte('recorded_at', since)
     .order('recorded_at', { ascending: true })
 
+  if (error) throw new Error(error.message)
   if (!data || data.length === 0) return []
 
   if (period === '24h') return data as ChartDataPoint[]

@@ -82,16 +82,25 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
   const [period, setPeriod] = useState<ChartPeriod>('24h')
   const [data, setData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getSensorReadings(sensorId, period).then((rows) => {
-      if (!cancelled) {
-        setData(rows)
-        setLoading(false)
-      }
-    })
+    setFetchError(null)
+    getSensorReadings(sensorId, period)
+      .then((rows) => {
+        if (!cancelled) {
+          setData(rows)
+          setLoading(false)
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setFetchError(err instanceof Error ? err.message : 'データの取得に失敗しました')
+          setLoading(false)
+        }
+      })
     return () => {
       cancelled = true
     }
@@ -131,6 +140,10 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
       {loading ? (
         <div className="flex h-48 items-center justify-center text-sm text-gray-400">
           読み込み中...
+        </div>
+      ) : fetchError ? (
+        <div className="flex h-48 items-center justify-center text-sm text-red-400">
+          {fetchError}
         </div>
       ) : data.length === 0 ? (
         <div className="flex h-48 items-center justify-center text-sm text-gray-400">

@@ -4,16 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Scissors } from 'lucide-react'
 import { HarvestModal } from './HarvestModal'
-import type { Alert, Plant, Zone, ZonePlant } from '../types'
+import { getDaysFromPlanting } from '../utils'
+import type { Alert, Zone, ZonePlant } from '../types'
 
 type Props = {
   zone: Zone
-  currentPlant: (ZonePlant & { plants: Plant }) | null
+  currentPlant: ZonePlant | null
   unresolvedAlerts: Alert[]
-}
-
-function getDaysFromPlanting(plantedAt: string): number {
-  return Math.floor((Date.now() - new Date(plantedAt).getTime()) / (1000 * 60 * 60 * 24))
 }
 
 export function ZoneInfoCard({ zone, currentPlant, unresolvedAlerts }: Props) {
