@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
@@ -7,6 +8,18 @@ import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant
 import { AddDeviceForm, ReissueApiKeySection } from '@/features/zones/components/ZoneSettingsDevice'
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
 import type { Device, Plant, Sensor } from '@/features/dashboard/types'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: zone } = await supabase.from('zones').select('name').eq('id', id).single()
+  const name = zone?.name ?? 'ゾーン'
+  return { title: `${name} — 設定 | mini-farm` }
+}
 
 export default async function ZoneSettingsPage({
   params,

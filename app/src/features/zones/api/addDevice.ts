@@ -1,6 +1,8 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient, getUser } from '@/lib/supabase/server'
+import { generateApiKey } from '@/lib/generateApiKey'
 
 export type AddDeviceState = {
   success: boolean
@@ -18,13 +20,7 @@ export async function addDevice(
   const zoneId = formData.get('zone_id') as string
   const name = (formData.get('name') as string | null)?.trim() || null
 
-  const rawKey = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
-
-  const encoder = new TextEncoder()
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(rawKey))
-  const apiKeyHash = Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
+  const { rawKey, apiKeyHash } = await generateApiKey()
 
   const supabase = await createClient()
 
@@ -36,5 +32,6 @@ export async function addDevice(
 
   if (error) return { success: false, error: 'デバイスの追加に失敗しました' }
 
+  revalidatePath(`/zones/${zoneId}/settings`)
   return { success: true, apiKey: rawKey }
 }
