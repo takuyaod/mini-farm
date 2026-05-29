@@ -11,11 +11,9 @@ type Props = {
 
 export function ZoneRealtimeProvider({ sensorIds, channelKey }: Props) {
   const { setStatus } = useRealtimeContext()
-
-  if (sensorIds.length === 0) return null
-
-  const filter = `sensor_id=in.(${sensorIds.join(',')})`
-  const status = useRealtime({ channelName: `zone-readings-${channelKey}`, filter })
+  const enabled = sensorIds.length > 0
+  const filter = enabled ? `sensor_id=in.(${sensorIds.join(',')})` : undefined
+  const status = useRealtime({ channelName: `zone-readings-${channelKey}`, filter, enabled })
 
   useEffect(() => {
     setStatus(status)

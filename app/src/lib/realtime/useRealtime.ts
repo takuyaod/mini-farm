@@ -9,13 +9,19 @@ export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected'
 type UseRealtimeOptions = {
   channelName: string
   filter?: string
+  enabled?: boolean
 }
 
-export function useRealtime({ channelName, filter }: UseRealtimeOptions): RealtimeStatus {
+export function useRealtime({ channelName, filter, enabled = true }: UseRealtimeOptions): RealtimeStatus {
   const router = useRouter()
   const [status, setStatus] = useState<RealtimeStatus>('connecting')
 
   useEffect(() => {
+    if (!enabled) {
+      setStatus('disconnected')
+      return
+    }
+
     const supabase = createClient()
 
     const channelConfig = filter
@@ -40,7 +46,7 @@ export function useRealtime({ channelName, filter }: UseRealtimeOptions): Realti
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [channelName, filter, router])
+  }, [channelName, filter, enabled, router])
 
   return status
 }
