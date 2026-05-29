@@ -1,10 +1,14 @@
 import express from "express";
 
 // 開発用の短縮間隔（本番ESP32は shared/constants.ts の SEND_INTERVAL_MS = 10分）
-const INTERVAL_MS = 5000;
+const DEV_INTERVAL_MS = 5000;
 const PORT = Number(process.env.PORT ?? 3001);
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://host.docker.internal:54321";
-const DEVICE_API_KEY = process.env.DEVICE_API_KEY ?? "dev-api-key-001";
+const DEVICE_API_KEY = process.env.DEVICE_API_KEY;
+if (!DEVICE_API_KEY) {
+  console.error("DEVICE_API_KEY is not set. Copy .env.example to .env and set the value.");
+  process.exit(1);
+}
 
 const BASE_VALUES = { ec: 1.5, ph: 6.5, water_temp: 22.0 };
 const JITTER = { ec: 0.1, ph: 0.2, water_temp: 0.5 };
@@ -45,8 +49,9 @@ let state: "running" | "stopped" = "stopped";
 function start() {
   if (state === "running") return;
   state = "running";
+  // 起動直後に1回即時送信し、その後インターバル開始
   postReading();
-  timer = setInterval(postReading, INTERVAL_MS);
+  timer = setInterval(postReading, DEV_INTERVAL_MS);
 }
 
 function stop() {
@@ -72,7 +77,7 @@ app.post("/stop", (_req, res) => {
 });
 
 app.get("/status", (_req, res) => {
-  res.json({ status: state, interval_ms: INTERVAL_MS });
+  res.json({ status: state, interval_ms: DEV_INTERVAL_MS });
 });
 
 // 開発専用サービス。本番環境・外部ネットワークには公開しないこと
