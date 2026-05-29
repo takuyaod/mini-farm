@@ -87,7 +87,6 @@ export function ZoneCard({ data }: Props) {
           <AlertList
             alerts={unresolvedAlerts}
             sensors={sensorsWithReadings}
-            zoneId={zone.id}
           />
         </div>
 

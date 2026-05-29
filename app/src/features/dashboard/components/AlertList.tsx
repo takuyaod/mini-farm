@@ -8,10 +8,9 @@ import type { Alert, SensorWithReading } from '../types'
 type Props = {
   alerts: Alert[]
   sensors: SensorWithReading[]
-  zoneId: string
 }
 
-export function AlertList({ alerts, sensors, zoneId }: Props) {
+export function AlertList({ alerts, sensors }: Props) {
   const [optimisticAlerts, removeAlert] = useOptimistic(
     alerts,
     (current, alertId: string) => current.filter((a) => a.id !== alertId)

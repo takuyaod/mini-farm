@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -31,8 +32,7 @@ export function UserMenu({ user }: Props) {
         className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 hover:ring-2 hover:ring-gray-300 focus:outline-none"
       >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt={fullName ?? 'avatar'} className="h-full w-full object-cover" />
+          <Image src={avatarUrl} alt={fullName ?? 'avatar'} width={32} height={32} className="h-full w-full object-cover" />
         ) : (
           <span className="text-sm font-semibold text-gray-600">{initial}</span>
         )}

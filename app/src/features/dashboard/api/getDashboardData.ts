@@ -1,3 +1,4 @@
+import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { OFFLINE_THRESHOLD_MIN } from 'shared/constants'
 import type {
@@ -53,6 +54,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           .from('readings')
           .select('*')
           .in('sensor_id', allSensorIds)
+          .gte('recorded_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
           .order('recorded_at', { ascending: false })
       : { data: [] },
     (() => {
