@@ -17,17 +17,21 @@ function jitter(base: number, range: number): number {
   return Math.round((base + (Math.random() * 2 - 1) * range) * 100) / 100;
 }
 
-function buildPayload() {
+function buildPayload(timestamp: string) {
   return {
-    ec: jitter(BASE_VALUES.ec, JITTER.ec),
-    ph: jitter(BASE_VALUES.ph, JITTER.ph),
-    water_temp: jitter(BASE_VALUES.water_temp, JITTER.water_temp),
+    timestamp,
+    idempotency_key: `emulator_${Date.now()}`,
+    readings: [
+      { sensor_type: "ec",         value: jitter(BASE_VALUES.ec,         JITTER.ec) },
+      { sensor_type: "ph",         value: jitter(BASE_VALUES.ph,         JITTER.ph) },
+      { sensor_type: "water_temp", value: jitter(BASE_VALUES.water_temp, JITTER.water_temp) },
+    ],
   };
 }
 
 async function postReading() {
-  const payload = buildPayload();
   const timestamp = new Date().toISOString();
+  const payload = buildPayload(timestamp);
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/readings`, {
       method: "POST",
@@ -37,7 +41,8 @@ async function postReading() {
       },
       body: JSON.stringify(payload),
     });
-    console.log(`[${timestamp}] POST → ${res.status}`);
+    const body = await res.text();
+    console.log(`[${timestamp}] POST → ${res.status} ${body}`);
   } catch (err) {
     console.error(`[${timestamp}] POST → ERROR: ${(err as Error).message}`);
   }
