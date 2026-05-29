@@ -25,7 +25,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Local JWT validation (no API call) — fast enough for every request
+  // Local JWT validation (no API call) — fast enough for every request.
+  // Cannot use getClaims() from lib/supabase/server here because that helper
+  // depends on cookies() from next/headers, which is unavailable in middleware context.
   const {
     data: { session },
   } = await supabase.auth.getSession()
