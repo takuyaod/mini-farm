@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import { OFFLINE_THRESHOLD_MIN } from 'shared/constants'
+import { OFFLINE_THRESHOLD_MIN } from '@/constants'
 import type {
   Alert,
   Device,
