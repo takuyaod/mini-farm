@@ -6,6 +6,7 @@ import { getZoneDetail } from '@/features/zones/api/getZoneDetail'
 import { ZoneInfoCard } from '@/features/zones/components/ZoneInfoCard'
 import { SensorSection } from '@/features/zones/components/SensorSection'
 import { DeviceStatus } from '@/features/zones/components/DeviceStatus'
+import { ZoneRealtimeProvider } from '@/features/zones/components/ZoneRealtimeProvider'
 
 export default async function ZoneDetailPage({
   params,
@@ -20,9 +21,11 @@ export default async function ZoneDetailPage({
   const { zone, devices, sensors, unresolvedAlerts, currentPlant, isOffline } = data
 
   const totalUnresolvedAlerts = unresolvedAlerts.length
+  const sensorIds = sensors.map((s) => s.id)
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ZoneRealtimeProvider sensorIds={sensorIds} channelKey={id} />
       <Header alertCount={totalUnresolvedAlerts} />
       <main className="mx-auto max-w-3xl px-4 py-6">
         {/* ゾーンヘッダー */}

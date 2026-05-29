@@ -2,6 +2,7 @@ import { Header } from '@/components/Header'
 import { AlertBanner } from '@/features/dashboard/components/AlertBanner'
 import { ZoneCard } from '@/features/dashboard/components/ZoneCard'
 import { AddZoneModal } from '@/features/dashboard/components/AddZoneModal'
+import { DashboardRealtimeProvider } from '@/features/dashboard/components/DashboardRealtimeProvider'
 import { getDashboardData } from '@/features/dashboard/api/getDashboardData'
 
 export default async function DashboardPage() {
@@ -9,6 +10,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <DashboardRealtimeProvider />
       <Header alertCount={totalUnresolvedAlerts} />
       <main className="mx-auto max-w-7xl px-4 py-6">
         {zones.length > 0 && <AlertBanner zones={zones} />}
