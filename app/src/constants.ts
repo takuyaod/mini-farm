@@ -1,0 +1,1 @@
+export const OFFLINE_THRESHOLD_MIN = 15
