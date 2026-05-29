@@ -59,7 +59,11 @@ export async function getAlerts({ tab, zoneId, cursor }: GetAlertsParams): Promi
       ? alertsQuery.is('resolved_at', null)
       : alertsQuery.not('resolved_at', 'is', null)
   if (sensorIdFilter) alertsQuery = alertsQuery.in('sensor_id', sensorIdFilter)
-  if (cursor) alertsQuery = alertsQuery.lt('started_at', cursor)
+  if (cursor) {
+    alertsQuery = alertsQuery.or(
+      `started_at.lt.${cursor.started_at},and(started_at.eq.${cursor.started_at},id.lt.${cursor.id})`
+    )
+  }
   alertsQuery = alertsQuery.order('started_at', { ascending: false }).limit(PAGE_SIZE)
 
   const [alertsResult, countResult] = await Promise.all([alertsQuery, buildBase()])

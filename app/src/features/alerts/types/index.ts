@@ -15,10 +15,15 @@ export type AlertWithContext = {
   alertThresholdValue: number | null
 }
 
+export type AlertCursor = {
+  started_at: string
+  id: string
+}
+
 export type GetAlertsParams = {
   tab: 'unresolved' | 'resolved'
   zoneId?: string
-  cursor?: string
+  cursor?: AlertCursor
 }
 
 export type AlertsResult = {

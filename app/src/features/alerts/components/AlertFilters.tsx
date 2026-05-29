@@ -70,17 +70,26 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
   function handleLoadMore() {
     if (!lastAlert) return
     startTransition(async () => {
-      const result = await getAlerts({ tab, zoneId, cursor: lastAlert.started_at })
+      const result = await getAlerts({
+        tab,
+        zoneId,
+        cursor: { started_at: lastAlert.started_at, id: lastAlert.id },
+      })
       setDisplayedAlerts((prev) => [...prev, ...result.alerts])
+      setTotalCount(result.totalCount)
     })
   }
 
   function handleResolve(alertId: string) {
     startTransition(async () => {
       removeAlert(alertId)
-      await resolveAlert(alertId)
-      setDisplayedAlerts((prev) => prev.filter((a) => a.id !== alertId))
-      setTotalCount((prev) => Math.max(0, prev - 1))
+      try {
+        await resolveAlert(alertId)
+        setDisplayedAlerts((prev) => prev.filter((a) => a.id !== alertId))
+        setTotalCount((prev) => Math.max(0, prev - 1))
+      } catch {
+        // サーバーエラー時は楽観的更新が巻き戻る（useOptimistic の仕様）
+      }
     })
   }
 

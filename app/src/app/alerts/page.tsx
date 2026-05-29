@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { createClient } from '@/lib/supabase/server'
 import { getAlerts } from '@/features/alerts/api/getAlerts'
 import { AlertFilters } from '@/features/alerts/components/AlertFilters'
+
+export const metadata: Metadata = {
+  title: 'アラート | ミニ農園モニタリング',
+}
 
 export default async function AlertsPage() {
   const supabase = await createClient()
