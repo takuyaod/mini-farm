@@ -13,6 +13,7 @@ npm-debug.log*
 # Next.js
 app/.next/
 app/out/
+app/tsconfig.tsbuildinfo
 
 # Supabase CLI
 supabase/.branches/
