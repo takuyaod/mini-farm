@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRealtimeContext } from '@/components/RealtimeContext'
-import { useRealtime } from '../hooks/useRealtime'
+import { useRealtime } from '@/lib/realtime/useRealtime'
 
 export function DashboardRealtimeProvider() {
   const { setStatus } = useRealtimeContext()

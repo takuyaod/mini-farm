@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRealtimeContext } from '@/components/RealtimeContext'
-import { useRealtime } from '@/features/dashboard/hooks/useRealtime'
+import { useRealtime } from '@/lib/realtime/useRealtime'
 
 type Props = {
   sensorIds: string[]
@@ -12,7 +12,9 @@ type Props = {
 export function ZoneRealtimeProvider({ sensorIds, channelKey }: Props) {
   const { setStatus } = useRealtimeContext()
 
-  const filter = sensorIds.length > 0 ? `sensor_id=in.(${sensorIds.join(',')})` : undefined
+  if (sensorIds.length === 0) return null
+
+  const filter = `sensor_id=in.(${sensorIds.join(',')})`
   const status = useRealtime({ channelName: `zone-readings-${channelKey}`, filter })
 
   useEffect(() => {

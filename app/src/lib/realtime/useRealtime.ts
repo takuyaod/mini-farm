@@ -27,10 +27,10 @@ export function useRealtime({ channelName, filter }: UseRealtimeOptions): Realti
       .on('postgres_changes', channelConfig, () => {
         router.refresh()
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
+      .subscribe((realtimeStatus) => {
+        if (realtimeStatus === 'SUBSCRIBED') {
           setStatus('connected')
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        } else if (realtimeStatus === 'CLOSED' || realtimeStatus === 'CHANNEL_ERROR') {
           setStatus('disconnected')
         } else {
           setStatus('connecting')

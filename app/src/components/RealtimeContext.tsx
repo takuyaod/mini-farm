@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState } from 'react'
-import type { RealtimeStatus } from '@/features/dashboard/hooks/useRealtime'
+import type { RealtimeStatus } from '@/lib/realtime/useRealtime'
 
 type RealtimeContextValue = {
   status: RealtimeStatus
