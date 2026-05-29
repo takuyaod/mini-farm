@@ -1,8 +1,7 @@
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { AlertBanner } from '@/features/dashboard/components/AlertBanner'
 import { ZoneCard } from '@/features/dashboard/components/ZoneCard'
+import { AddZoneModal } from '@/features/dashboard/components/AddZoneModal'
 import { getDashboardData } from '@/features/dashboard/api/getDashboardData'
 
 export default async function DashboardPage() {
@@ -29,13 +28,7 @@ export default async function DashboardPage() {
             <ZoneCard key={zoneData.zone.id} data={zoneData} />
           ))}
         </div>
-        <Link
-          href="/zones/new"
-          className="mt-4 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-6 text-sm text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-600"
-        >
-          <Plus className="h-4 w-4" />
-          ゾーンを追加
-        </Link>
+        <AddZoneModal />
       </main>
     </div>
   )
