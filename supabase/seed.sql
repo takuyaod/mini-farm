@@ -76,10 +76,9 @@ INSERT INTO auth.users (
 );
 
 -- public.users（auth.users.id と同一 UUID）
-INSERT INTO users (id, email, password_hash, created_at) VALUES (
+INSERT INTO users (id, email, created_at) VALUES (
     'c1b2c3d4-0000-7000-8000-000000000001',
     'dev@example.com',
-    '',
     now()
 );
 

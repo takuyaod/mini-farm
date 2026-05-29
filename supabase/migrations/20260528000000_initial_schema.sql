@@ -1,4 +1,9 @@
 -- ============================================================
+-- 拡張機能
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+
+-- ============================================================
 -- UUID v7 生成関数（PostgreSQL 17 対応）
 -- PostgreSQL 18 移行時は組み込み uuidv7() に切り替えること
 -- ============================================================
@@ -36,10 +41,11 @@ CREATE TYPE alert_type AS ENUM ('threshold_breach', 'sensor_fault');
 -- ============================================================
 
 -- users: ユーザープロファイル（auth.users.id と同一 UUID で管理）
+-- password_hash は GitHub OAuth 使用のため実運用では NULL。将来のカスタム認証拡張用に保持
 CREATE TABLE users (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     email         VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR NOT NULL,
+    password_hash VARCHAR,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -139,7 +145,7 @@ CREATE TABLE alerts (
     sensor_id         UUID NOT NULL REFERENCES sensors(id) ON DELETE RESTRICT,
     alert_type        alert_type NOT NULL,
     triggered_value   FLOAT,
-    breach_direction  VARCHAR(4),
+    breach_direction  VARCHAR(4) CHECK (breach_direction IN ('high', 'low')),
     started_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     resolved_at       TIMESTAMPTZ
 );
@@ -158,6 +164,35 @@ CREATE UNIQUE INDEX uq_sensor_per_device
 CREATE UNIQUE INDEX uq_zone_plants_active
     ON zone_plants (zone_id)
     WHERE harvested_at IS NULL;
+
+-- FK カラムへのインデックス（RLS の EXISTS サブクエリのパフォーマンス対策）
+CREATE INDEX idx_zones_user_id        ON zones       (user_id);
+CREATE INDEX idx_devices_zone_id      ON devices     (zone_id);
+CREATE INDEX idx_sensors_device_id    ON sensors     (device_id);
+CREATE INDEX idx_readings_sensor_id   ON readings    (sensor_id);
+CREATE INDEX idx_zone_plants_zone_id  ON zone_plants (zone_id);
+CREATE INDEX idx_alerts_sensor_id     ON alerts      (sensor_id);
+
+-- ============================================================
+-- auth.users → public.users のトリガー
+-- GitHub OAuth でサインアップした際に public.users を自動作成する
+-- ============================================================
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO public.users (id, email, created_at)
+  VALUES (new.id, new.email, new.created_at)
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ============================================================
 -- RLS: グローバルマスタ（全ユーザー読み取り可・書き込み不可）
@@ -180,6 +215,8 @@ CREATE POLICY "anyone can read" ON plant_thresholds
 -- ============================================================
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users can insert own record" ON users
+    FOR INSERT WITH CHECK (id = auth.uid());
 CREATE POLICY "users can read own record" ON users
     FOR SELECT USING (id = auth.uid());
 CREATE POLICY "users can update own record" ON users
