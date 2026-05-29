@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState } from 'react'
+import Link from 'next/link'
 import {
   Dialog,
   DialogContent,
@@ -23,13 +24,38 @@ const initialState: HarvestState = { success: false }
 export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
   const [state, formAction, isPending] = useActionState(harvestZonePlant, initialState)
 
-  useEffect(() => {
-    if (state.success) {
-      onClose()
-    }
-  }, [state.success, onClose])
-
   const days = getDaysFromPlanting(zonePlant.planted_at)
+
+  if (state.success) {
+    return (
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>収穫を記録しました</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-4">
+            <p className="text-sm text-gray-600">このゾーンの栽培が終了しました。</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                閉じる
+              </button>
+              <Link
+                href={`/zones/${zoneId}/settings`}
+                onClick={onClose}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                新しい作付けを開始する
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !isPending && !o && onClose()}>
