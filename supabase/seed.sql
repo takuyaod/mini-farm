@@ -75,12 +75,7 @@ INSERT INTO auth.users (
     now()
 );
 
--- public.users（auth.users.id と同一 UUID）
-INSERT INTO users (id, email, created_at) VALUES (
-    'c1b2c3d4-0000-7000-8000-000000000001',
-    'dev@example.com',
-    now()
-);
+-- public.users は auth.users INSERT 時に handle_new_user トリガーが自動作成する
 
 -- 開発用ゾーン
 INSERT INTO zones (id, user_id, name, type, created_at) VALUES (
