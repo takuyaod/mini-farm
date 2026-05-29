@@ -1,6 +1,8 @@
 import 'server-only'
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { OFFLINE_THRESHOLD_MIN } from '@/constants'
+import { DAY_MS } from '../utils/date'
 import type {
   Alert,
   Device,
@@ -12,7 +14,9 @@ import type {
   ZoneDetailData,
 } from '../types'
 
-export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | null> {
+export const getZoneDetail = cache(async function getZoneDetail(
+  zoneId: string
+): Promise<ZoneDetailData | null> {
   const supabase = await createClient()
 
   const { data: zone, error: zoneError } = await supabase
@@ -59,7 +63,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
           .in('sensor_id', allActiveSensorIds)
           .gte(
             'recorded_at',
-            new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            new Date(Date.now() - DAY_MS).toISOString()
           )
           .order('recorded_at', { ascending: false })
       : { data: [] },
@@ -133,4 +137,4 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
     isOffline,
     lastSeenAt: latestLastSeen,
   }
-}
+})

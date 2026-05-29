@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { X, AlertTriangle } from 'lucide-react'
 import { harvestZone } from '../api/harvestZone'
+import { daysSince } from '../utils/date'
 import type { ZonePlant } from '../types'
 
 type Props = {
@@ -10,11 +11,6 @@ type Props = {
   onClose: () => void
   zonePlant: ZonePlant
   zoneId: string
-}
-
-function daysSince(dateStr: string): number {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
 function formatDate(dateStr: string): string {
@@ -46,11 +42,11 @@ export function HarvestModal({ isOpen, onClose, zonePlant, zoneId }: Props) {
     }
 
     startTransition(async () => {
-      try {
-        await harvestZone(zonePlant.id, weightNum, notes || null, zoneId)
-        onClose()
-      } catch {
+      const result = await harvestZone(zonePlant.id, weightNum, notes || null, zoneId)
+      if ('error' in result) {
         setError('収穫の記録に失敗しました。もう一度お試しください。')
+      } else {
+        onClose()
       }
     })
   }
@@ -71,7 +67,6 @@ export function HarvestModal({ isOpen, onClose, zonePlant, zoneId }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
-          {/* 栽培情報 */}
           <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
             <div className="flex justify-between">
               <span>植付日</span>
@@ -83,10 +78,9 @@ export function HarvestModal({ isOpen, onClose, zonePlant, zoneId }: Props) {
             </div>
           </div>
 
-          {/* 収穫量 */}
           <div>
             <label htmlFor="harvest-weight" className="block text-sm font-medium text-gray-700">
-              収穫量 <span className="text-red-500">*</span>
+              収穫量 <span className="text-gray-400">（0g は廃棄・枯死として記録）</span>
             </label>
             <div className="mt-1 flex items-center gap-2">
               <input
@@ -97,14 +91,12 @@ export function HarvestModal({ isOpen, onClose, zonePlant, zoneId }: Props) {
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="0"
-                required
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               />
               <span className="shrink-0 text-sm text-gray-600">g</span>
             </div>
           </div>
 
-          {/* メモ */}
           <div>
             <label htmlFor="harvest-notes" className="block text-sm font-medium text-gray-700">
               メモ <span className="text-gray-400">（任意）</span>
@@ -119,17 +111,13 @@ export function HarvestModal({ isOpen, onClose, zonePlant, zoneId }: Props) {
             />
           </div>
 
-          {/* 警告文 */}
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
             <span>確定するとこのゾーンの栽培が終了します</span>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {/* ボタン */}
           <div className="flex gap-3 pt-1">
             <button
               type="button"

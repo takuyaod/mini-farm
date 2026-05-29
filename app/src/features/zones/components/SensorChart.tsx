@@ -83,13 +83,13 @@ export function SensorChart({ sensor }: Props) {
   }, [fetchData])
 
   const values = data.map((d) => d.value)
-  const minVal = values.length > 0 ? Math.min(...values) : null
-  const maxVal = values.length > 0 ? Math.max(...values) : null
+  const minVal = values.length > 0 ? values.reduce((a, b) => Math.min(a, b), Infinity) : null
+  const maxVal = values.length > 0 ? values.reduce((a, b) => Math.max(a, b), -Infinity) : null
   const avgVal =
     values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null
 
   const yDomain: [number | 'auto', number | 'auto'] = (() => {
-    const allValues = [
+    const candidates = [
       ...values,
       threshold?.alert_min,
       threshold?.alert_max,
@@ -97,9 +97,9 @@ export function SensorChart({ sensor }: Props) {
       threshold?.optimal_max,
     ].filter((v): v is number => v !== null && v !== undefined)
 
-    if (allValues.length === 0) return ['auto', 'auto']
-    const min = Math.min(...allValues)
-    const max = Math.max(...allValues)
+    if (candidates.length === 0) return ['auto', 'auto']
+    const min = candidates.reduce((a, b) => Math.min(a, b), Infinity)
+    const max = candidates.reduce((a, b) => Math.max(a, b), -Infinity)
     const padding = (max - min) * 0.1 || 1
     return [min - padding, max + padding]
   })()

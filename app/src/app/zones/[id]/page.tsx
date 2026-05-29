@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Settings, AlertTriangle } from 'lucide-react'
+import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { getZoneDetail } from '@/features/zones/api/getZoneDetail'
 import { ZoneInfoCard } from '@/features/zones/components/ZoneInfoCard'
@@ -9,6 +10,13 @@ import { DeviceStatus } from '@/features/zones/components/DeviceStatus'
 
 type Props = {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const data = await getZoneDetail(id)
+  if (!data) return { title: 'ゾーンが見つかりません' }
+  return { title: `${data.zone.name} — ミニ農園モニタリング` }
 }
 
 export default async function ZoneDetailPage({ params }: Props) {

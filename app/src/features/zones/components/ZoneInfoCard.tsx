@@ -4,17 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Leaf, Scissors, AlertTriangle } from 'lucide-react'
 import { HarvestModal } from './HarvestModal'
+import { daysSince } from '../utils/date'
 import type { Zone, ZonePlant, Alert } from '../types'
 
 type Props = {
   zone: Zone
   currentPlant: ZonePlant | null
   unresolvedAlerts: Alert[]
-}
-
-function daysSince(dateStr: string): number {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
 export function ZoneInfoCard({ zone, currentPlant, unresolvedAlerts }: Props) {

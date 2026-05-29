@@ -3,14 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, getUser } from '@/lib/supabase/server'
 
+type HarvestResult = { success: true } | { error: string }
+
 export async function harvestZone(
   zonePlantId: string,
   weightG: number | null,
   notes: string | null,
   zoneId: string
-): Promise<void> {
+): Promise<HarvestResult> {
   const user = await getUser()
-  if (!user) throw new Error('Unauthorized')
+  if (!user) return { error: 'Unauthorized' }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -22,7 +24,8 @@ export async function harvestZone(
     })
     .eq('id', zonePlantId)
 
-  if (error) throw new Error(error.message)
+  if (error) return { error: error.message }
 
   revalidatePath(`/zones/${zoneId}`)
+  return { success: true }
 }
