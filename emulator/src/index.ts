@@ -1,5 +1,6 @@
 import express from "express";
 
+// 開発用の短縮間隔（本番ESP32は shared/constants.ts の SEND_INTERVAL_MS = 10分）
 const INTERVAL_MS = 5000;
 const PORT = Number(process.env.PORT ?? 3001);
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://host.docker.internal:54321";
