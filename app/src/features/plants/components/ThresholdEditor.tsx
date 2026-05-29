@@ -51,7 +51,7 @@ export function ThresholdEditor({ plants, sensorTypes, thresholdsByPlantId }: Pr
         {!selectedPlant ? (
           <p className="py-4 text-sm text-gray-500">植物を選択してください</p>
         ) : (
-          <form action={formAction} className="flex flex-col gap-4">
+          <form key={selectedPlantId} action={formAction} className="flex flex-col gap-4">
             <input type="hidden" name="plant_id" value={selectedPlant.id} />
             {filteredSensorTypes.map((st) => {
               const t = getThreshold(st.id)

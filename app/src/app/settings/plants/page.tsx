@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { Header } from '@/components/Header'
 import { AddPlantForm } from '@/features/plants/components/AddPlantForm'
 import { ThresholdEditor } from '@/features/plants/components/ThresholdEditor'
 import { getPlantPageData } from '@/features/plants/api/getPlants'
+
+export const metadata: Metadata = {
+  title: '植物マスタ管理 | ミニ農園モニタリング',
+}
 
 export default async function PlantSettingsPage() {
   const { plants, sensorTypes, thresholdsByPlantId } = await getPlantPageData()

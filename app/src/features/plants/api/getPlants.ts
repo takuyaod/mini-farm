@@ -17,6 +17,10 @@ export async function getPlantPageData(): Promise<PlantPageData> {
     supabase.from('plant_thresholds').select('*'),
   ])
 
+  if (plantsRes.error) throw plantsRes.error
+  if (sensorTypesRes.error) throw sensorTypesRes.error
+  if (thresholdsRes.error) throw thresholdsRes.error
+
   const plants = (plantsRes.data ?? []) as Plant[]
   const thresholds = (thresholdsRes.data ?? []) as PlantThreshold[]
 

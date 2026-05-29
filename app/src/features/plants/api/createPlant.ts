@@ -16,6 +16,7 @@ export async function createPlant(
   const cultivation_type = formData.get('cultivation_type') as string | null
 
   if (!name) return { success: false, error: '植物名を入力してください' }
+  if (name.length > 100) return { success: false, error: '植物名は100文字以内で入力してください' }
   if (cultivation_type !== 'hydroponic' && cultivation_type !== 'soil' && cultivation_type !== 'both') {
     return { success: false, error: '栽培方式を選択してください' }
   }
@@ -24,7 +25,7 @@ export async function createPlant(
   if (!user) return { success: false, error: '認証エラーが発生しました' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('plants').insert({ name, cultivation_type })
+  const { error } = await supabase.from('plants').insert({ name, cultivation_type, created_by: user.id })
 
   if (error) return { success: false, error: error.message }
 

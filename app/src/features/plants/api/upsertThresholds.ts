@@ -18,6 +18,16 @@ export async function upsertThresholds(
   const user = await getUser()
   if (!user) return { success: false, error: '認証エラーが発生しました' }
 
+  const supabase = await createClient()
+  const { data: plant, error: plantError } = await supabase
+    .from('plants')
+    .select('id, created_by')
+    .eq('id', plantId)
+    .single()
+
+  if (plantError || !plant) return { success: false, error: '植物が見つかりません' }
+  if (plant.created_by !== user.id) return { success: false, error: 'この植物の閾値を編集する権限がありません' }
+
   const sensorTypeIds = formData.getAll('sensor_type_id') as string[]
   if (sensorTypeIds.length === 0) return { success: true }
 
@@ -36,7 +46,6 @@ export async function upsertThresholds(
     alert_max: parseNum(formData.get(`alert_max_${sensorTypeId}`)),
   }))
 
-  const supabase = await createClient()
   const { error } = await supabase
     .from('plant_thresholds')
     .upsert(records, { onConflict: 'plant_id,sensor_type_id' })
