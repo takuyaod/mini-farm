@@ -5,6 +5,7 @@ import type {
   Alert,
   Device,
   DashboardData,
+  DashboardSummary,
   PlantThreshold,
   Reading,
   Sensor,
@@ -23,7 +24,11 @@ export async function getDashboardData(): Promise<DashboardData> {
     .order('created_at', { ascending: true })
 
   if (zonesError || !zones || zones.length === 0) {
-    return { zones: [], totalUnresolvedAlerts: 0 }
+    return {
+      zones: [],
+      totalUnresolvedAlerts: 0,
+      summary: { zoneCount: 0, deviceCount: 0, sensorCount: 0, unresolvedAlertCount: 0 },
+    }
   }
 
   const zoneIds = zones.map((z: Zone) => z.id)
@@ -43,7 +48,9 @@ export async function getDashboardData(): Promise<DashboardData> {
   const devices: Device[] = devicesRes.data ?? []
   const zonePlants: ZonePlant[] = zonePlantsRes.data ?? []
 
-  const allSensorIds = devices.flatMap((d: Device) => d.sensors.map((s: Sensor) => s.id))
+  const allSensorIds = devices.flatMap((d: Device) =>
+    d.sensors.filter((s: Sensor) => s.is_active).map((s: Sensor) => s.id)
+  )
 
   const [alertsData, readingsData, thresholdsData] = await Promise.all([
     allSensorIds.length > 0
@@ -134,5 +141,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     }
   })
 
-  return { zones: zoneCards, totalUnresolvedAlerts: allAlerts.length }
+  const summary: DashboardSummary = {
+    zoneCount: zones.length,
+    deviceCount: devices.length,
+    sensorCount: allSensorIds.length,
+    unresolvedAlertCount: allAlerts.length,
+  }
+
+  return { zones: zoneCards, totalUnresolvedAlerts: summary.unresolvedAlertCount, summary }
 }

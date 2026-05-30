@@ -88,7 +88,15 @@ export type ZoneCardData = {
   lastSeenAt: string | null
 }
 
+export type DashboardSummary = {
+  zoneCount: number
+  deviceCount: number
+  sensorCount: number
+  unresolvedAlertCount: number
+}
+
 export type DashboardData = {
   zones: ZoneCardData[]
   totalUnresolvedAlerts: number
+  summary: DashboardSummary
 }
