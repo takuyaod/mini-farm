@@ -1,6 +1,6 @@
 import { LogIn } from 'lucide-react'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAuthClient } from '@/lib/supabase/server'
 
 export default async function LoginPage({
   searchParams,
@@ -11,7 +11,7 @@ export default async function LoginPage({
 
   async function signInWithGitHub() {
     'use server'
-    const supabase = await createClient()
+    const supabase = await createAuthClient()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({

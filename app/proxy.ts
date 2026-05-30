@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const SUPABASE_AUTH_STORAGE_KEY = 'mini-farm-auth-token'
+
+type ResponseCookiesStore = ReturnType<typeof NextResponse.next>['cookies']
+type CookieSetOptions = Parameters<ResponseCookiesStore['set']>[2]
+type CookieToSet = { name: string; value: string; options?: CookieSetOptions }
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -8,11 +14,14 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      auth: {
+        storageKey: SUPABASE_AUTH_STORAGE_KEY,
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
