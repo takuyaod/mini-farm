@@ -1,8 +1,8 @@
 import { Header } from '@/components/Header'
 import { AlertBanner } from '@/features/dashboard/components/AlertBanner'
-import { ZoneCard } from '@/features/dashboard/components/ZoneCard'
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader'
 import { DashboardRealtimeProvider } from '@/features/dashboard/components/DashboardRealtimeProvider'
+import { ZoneFilter } from '@/features/dashboard/components/ZoneFilter'
 import { getDashboardData } from '@/features/dashboard/api/getDashboardData'
 
 export default async function DashboardPage() {
@@ -21,21 +21,8 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-6">
         <DashboardHeader zoneCount={zones.length} today={today} />
         {zones.length > 0 && <AlertBanner zones={zones} />}
-        <div
-          className={`mt-4 ${
-            zones.length === 1
-              ? 'flex flex-col'
-              : 'grid gap-4'
-          }`}
-          style={
-            zones.length > 1
-              ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
-              : undefined
-          }
-        >
-          {zones.map((zoneData) => (
-            <ZoneCard key={zoneData.zone.id} data={zoneData} />
-          ))}
+        <div className="mt-4">
+          <ZoneFilter zones={zones} />
         </div>
       </main>
     </div>
