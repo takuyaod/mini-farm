@@ -28,6 +28,7 @@ export function ZoneFilter({ zones }: Props) {
     if (activeTab === 'hydroponic') return data.zone.type === 'hydroponic'
     if (activeTab === 'soil') return data.zone.type === 'soil'
     if (activeTab === 'alert') return data.unresolvedAlerts.length > 0
+    return false
   })
 
   const showAddCard = activeTab === 'all'
