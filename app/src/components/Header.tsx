@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Bell } from 'lucide-react'
 import { getClaims } from '@/lib/supabase/server'
 import { UserMenu } from './UserMenu'
+import { RealtimeIndicator } from './RealtimeIndicator'
 
 type Props = {
   alertCount?: number
@@ -17,10 +18,7 @@ export async function Header({ alertCount = 0 }: Props) {
           <Link href="/" className="text-lg font-semibold text-gray-900">
             ミニ農園モニタリング
           </Link>
-          <span className="flex items-center gap-1 text-xs text-green-600">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-            更新中
-          </span>
+          <RealtimeIndicator />
         </div>
         <div className="flex items-center gap-3">
           <Link href="/alerts" className="relative rounded-md p-1 hover:bg-gray-100">
