@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { LogOut, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
@@ -49,6 +50,14 @@ export function UserMenu({ user }: Props) {
               </div>
             )}
             <div className="py-1">
+              <Link
+                href="/settings/plants"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setOpen(false)}
+              >
+                <Settings className="h-4 w-4" />
+                植物マスタ管理
+              </Link>
               <button
                 className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 onClick={handleLogout}
