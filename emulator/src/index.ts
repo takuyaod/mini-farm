@@ -5,9 +5,22 @@ const DEV_INTERVAL_MS = 5000;
 const PORT = Number(process.env.PORT ?? 3001);
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://host.docker.internal:54321";
 const DEVICE_API_KEY = process.env.DEVICE_API_KEY;
-if (!DEVICE_API_KEY) {
+const USER_JWT_TOKEN = process.env.USER_JWT_TOKEN || "";
+
+// USER_JWT_TOKEN が設定されている場合はそちらを優先する。
+// 未設定の場合は DEVICE_API_KEY を使用する。
+if (!USER_JWT_TOKEN && !DEVICE_API_KEY) {
   console.error("DEVICE_API_KEY is not set. Copy .env.example to .env and set the value.");
   process.exit(1);
+}
+
+// 実際に Authorization ヘッダーに使用するトークン
+const AUTH_TOKEN = USER_JWT_TOKEN || DEVICE_API_KEY!;
+
+if (USER_JWT_TOKEN) {
+  console.log("Using USER_JWT_TOKEN as Bearer token (login user mode).");
+} else {
+  console.log("Using DEVICE_API_KEY as Bearer token (device key mode).");
 }
 
 const BASE_VALUES = { ec: 1.5, ph: 6.5, water_temp: 22.0 };
@@ -54,7 +67,7 @@ async function postReading() {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/readings`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${DEVICE_API_KEY}`,
+        Authorization: `Bearer ${AUTH_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
@@ -74,7 +87,7 @@ async function postBatch(count: number) {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/readings-batch`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${DEVICE_API_KEY}`,
+        Authorization: `Bearer ${AUTH_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

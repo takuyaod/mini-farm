@@ -453,6 +453,7 @@ docker compose up -d
 |---|---|
 | `SUPABASE_PUBLISHABLE_KEY` | `supabase start` で表示される anon key |
 | `DEVICE_API_KEY` | エミュレータ用デバイスキー（開発用: `dev-api-key-001`） |
+| `USER_JWT_TOKEN` | （オプション）ログインユーザーの JWT トークン。設定時は `DEVICE_API_KEY` より優先して `Authorization: Bearer` に使用される |
 
 > `.env` は `.gitignore` に登録済みのため、リポジトリにコミットされない。  
 > `.env.example` をコピーして使用すること。
@@ -520,6 +521,16 @@ export const OFFLINE_THRESHOLD_MIN = 15               // 15分（送信間隔の
 マイコン実機の代わりに、Node.js スクリプトが定期的に HTTP POST を送信する。  
 センサー値は基準値にランダムなノイズを加えて現実的な変動を再現する。  
 送信間隔は開発効率を優先して 5秒に設定する（本番の 10分とは別管理）。
+
+**認証モード**
+
+| 環境変数 | 動作 |
+|---|---|
+| `DEVICE_API_KEY` のみ設定 | デバイスキーを `Authorization: Bearer` に使用（デフォルト） |
+| `USER_JWT_TOKEN` を設定 | ログインユーザーの JWT を `Authorization: Bearer` に使用（`DEVICE_API_KEY` より優先） |
+
+GitHub OAuth などでログインしたユーザーとして送信したい場合は `USER_JWT_TOKEN` を設定する。  
+取得方法・設定手順は `README.md` の「GitHubログインユーザーとして送信する」を参照。
 
 **手動制御 API（HTTP）**
 
