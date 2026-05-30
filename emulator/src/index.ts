@@ -29,6 +29,24 @@ function buildPayload(timestamp: string) {
   };
 }
 
+/** バッチ送信用ペイロードを生成する（count 件分のバッチを作成） */
+function buildBatchPayload(count: number) {
+  const now = Date.now();
+  const batches = Array.from({ length: count }, (_, i) => {
+    const batchTime = new Date(now - (count - 1 - i) * DEV_INTERVAL_MS).toISOString();
+    return {
+      timestamp: batchTime,
+      idempotency_key: `emulator_batch_${now}_${i}`,
+      readings: [
+        { sensor_type: "ec",         value: jitter(BASE_VALUES.ec,         JITTER.ec) },
+        { sensor_type: "ph",         value: jitter(BASE_VALUES.ph,         JITTER.ph) },
+        { sensor_type: "water_temp", value: jitter(BASE_VALUES.water_temp, JITTER.water_temp) },
+      ],
+    };
+  });
+  return { batches };
+}
+
 async function postReading() {
   const timestamp = new Date().toISOString();
   const payload = buildPayload(timestamp);
@@ -45,6 +63,26 @@ async function postReading() {
     console.log(`[${timestamp}] POST → ${res.status} ${body}`);
   } catch (err) {
     console.error(`[${timestamp}] POST → ERROR: ${(err as Error).message}`);
+  }
+}
+
+/** バッチ送信テスト用: count 件分のデータを1リクエストでまとめて送信する */
+async function postBatch(count: number) {
+  const timestamp = new Date().toISOString();
+  const payload = buildBatchPayload(count);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/readings-batch`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${DEVICE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.text();
+    console.log(`[${timestamp}] POST batch(${count}) → ${res.status} ${body}`);
+  } catch (err) {
+    console.error(`[${timestamp}] POST batch → ERROR: ${(err as Error).message}`);
   }
 }
 
@@ -83,6 +121,19 @@ app.post("/stop", (_req, res) => {
 
 app.get("/status", (_req, res) => {
   res.json({ status: state, interval_ms: DEV_INTERVAL_MS });
+});
+
+// バッチ送信テスト用エンドポイント（開発専用）
+// count パラメータで送信バッチ数を指定（デフォルト: 3）
+app.post("/start-batch", async (req, res) => {
+  const rawCount = req.body?.count ?? 3;
+  const count = Number(rawCount);
+  if (!Number.isInteger(count) || count < 1 || count > 20) {
+    res.status(400).json({ error: "count must be a positive integer (max 20)" });
+    return;
+  }
+  await postBatch(count);
+  res.json({ sent: count });
 });
 
 // 開発専用サービス。本番環境・外部ネットワークには公開しないこと
