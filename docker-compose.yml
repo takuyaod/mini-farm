@@ -19,4 +19,5 @@ services:
     environment:
       SUPABASE_URL: http://host.docker.internal:54321
       DEVICE_API_KEY: ${DEVICE_API_KEY}
+      USER_JWT_TOKEN: ${USER_JWT_TOKEN:-}
     restart: unless-stopped
