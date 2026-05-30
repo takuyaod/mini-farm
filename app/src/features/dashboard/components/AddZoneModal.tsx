@@ -1,41 +1,37 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { useActionState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { createZone } from '@/features/dashboard/api/createZone'
 import type { CreateZoneState } from '@/features/dashboard/api/createZone'
 
 const initialState: CreateZoneState = { success: false }
 
-export function AddZoneModal() {
-  const [open, setOpen] = useState(false)
+type Props = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function AddZoneModal({ open, onOpenChange }: Props) {
   const [state, formAction, isPending] = useActionState(createZone, initialState)
 
   useEffect(() => {
     if (state.success) {
-      setOpen(false)
+      onOpenChange(false)
     }
-  }, [state.success])
+  }, [state.success, onOpenChange])
 
   const handleOpenChange = (next: boolean) => {
-    if (!isPending) setOpen(next)
+    if (!isPending) onOpenChange(next)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 p-6 text-sm text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-600">
-          <Plus className="h-4 w-4" />
-          ゾーンを追加
-        </button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>ゾーンを追加</DialogTitle>
