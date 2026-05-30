@@ -28,6 +28,7 @@ export async function updateDeviceName(
     .from('devices')
     .update({ name })
     .eq('id', deviceId)
+    .eq('zone_id', zoneId)
 
   if (error) return { success: false, error: 'デバイス名の更新に失敗しました' }
 
