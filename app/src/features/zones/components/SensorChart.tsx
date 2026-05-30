@@ -12,6 +12,7 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from 'recharts'
+import { Button } from '@/components/ui/button'
 import { getSensorReadings } from '../api/getSensorReadings'
 import type { ChartDataPoint, ChartPeriod, PlantThreshold } from '../types'
 
@@ -122,17 +123,15 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
         <h3 className="text-sm font-semibold text-gray-700">{sensorLabel} グラフ</h3>
         <div className="flex gap-1">
           {PERIODS.map((p) => (
-            <button
+            <Button
               key={p.value}
+              variant={period === p.value ? 'default' : 'secondary'}
+              size="sm"
               onClick={() => setPeriod(p.value)}
-              className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                period === p.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={period === p.value ? 'bg-blue-600 hover:bg-blue-700' : ''}
             >
               {p.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

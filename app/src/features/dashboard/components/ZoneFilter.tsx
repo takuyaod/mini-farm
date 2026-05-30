@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ZoneCard } from './ZoneCard'
 import { AddZoneModal } from './AddZoneModal'
 import type { ZoneCardData } from '../types'
@@ -72,14 +73,14 @@ export function ZoneFilter({ zones }: Props) {
             <ZoneCard key={zoneData.zone.id} data={zoneData} />
           ))}
           {showAddCard && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={() => setModalOpen(true)}
-              className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c8d0c6] bg-white text-[#8a978f] transition-colors hover:border-[#246e3a] hover:bg-[#f2f7f3] hover:text-[#246e3a]"
+              className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c8d0c6] bg-white text-[#8a978f] transition-colors hover:border-[#246e3a] hover:bg-[#f2f7f3] hover:text-[#246e3a] h-auto"
             >
               <Plus className="h-6 w-6" />
               <span className="text-sm font-medium">ゾーンを追加</span>
-            </button>
+            </Button>
           )}
         </div>
       ) : (

@@ -2,6 +2,7 @@
 
 import { useOptimistic, useTransition } from 'react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { resolveAlert } from '../api/resolveAlert'
 import type { Alert, SensorWithReading } from '../types'
 
@@ -47,17 +48,19 @@ export function AlertList({ alerts, sensors }: Props) {
           <span className="text-red-800">
             {getSensorLabel(alert.sensor_id)} — {getAlertLabel(alert)}
           </span>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               startTransition(async () => {
                 removeAlert(alert.id)
                 await resolveAlert(alert.id)
               })
             }}
-            className="shrink-0 rounded px-1.5 py-0.5 text-xs text-red-700 hover:bg-red-100"
+            className="shrink-0 h-auto px-1.5 py-0.5 text-xs text-red-700 hover:bg-red-100"
           >
             解消
-          </button>
+          </Button>
         </div>
       ))}
       {hasMore && (

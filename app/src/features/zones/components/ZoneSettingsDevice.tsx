@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { Key, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { addDevice, type AddDeviceState } from '../api/addDevice'
 import { reissueApiKey, type ReissueApiKeyState } from '../api/reissueApiKey'
 import type { Device } from '@/features/dashboard/types'
@@ -32,23 +34,23 @@ export function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
           <label htmlFor="device-name" className="text-sm font-medium text-gray-700">
             デバイス名（任意）
           </label>
-          <input
+          <Input
             id="device-name"
             name="name"
             type="text"
             placeholder="例: 温度センサーユニット01"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+            className="focus:border-green-500 focus:ring-green-500"
           />
         </div>
         {state.error && <p className="text-sm text-red-500">{state.error}</p>}
-        <button
+        <Button
           type="submit"
+          variant="green"
           disabled={isPending}
-          className="flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
           {isPending ? '追加中...' : 'デバイスを追加'}
-        </button>
+        </Button>
       </form>
       {state.success && state.apiKey && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
@@ -84,14 +86,15 @@ function ReissueApiKeyForm({ device }: ReissueFormProps) {
         </span>
         <form action={formAction}>
           <input type="hidden" name="device_id" value={device.id} />
-          <button
+          <Button
             type="submit"
+            variant="outline"
+            size="sm"
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             <Key className="h-3.5 w-3.5" />
             {isPending ? '発行中...' : '再発行'}
-          </button>
+          </Button>
         </form>
       </div>
       {state.error && <p className="text-xs text-red-500">{state.error}</p>}

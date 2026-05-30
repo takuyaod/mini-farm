@@ -1,3 +1,7 @@
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { AlertWithContext } from '../types'
 
 type Props = {
@@ -51,15 +55,15 @@ const BORDER_COLOR: Record<string, string> = {
   sensor_fault: '#EF9F27',
 }
 
-const BADGE_COLOR: Record<string, string> = {
-  threshold_breach: 'bg-red-100 text-red-700',
-  sensor_fault: 'bg-amber-100 text-amber-700',
+const BADGE_VARIANT: Record<string, 'red' | 'amber'> = {
+  threshold_breach: 'red',
+  sensor_fault: 'amber',
 }
 
 export function AlertCard({ alert, onResolve }: Props) {
   const isResolved = alert.resolved_at !== null
   const borderColor = BORDER_COLOR[alert.alert_type] ?? '#E24B4A'
-  const badgeColor = BADGE_COLOR[alert.alert_type] ?? 'bg-red-100 text-red-700'
+  const badgeVariant = BADGE_VARIANT[alert.alert_type] ?? 'red'
 
   return (
     <div
@@ -69,9 +73,7 @@ export function AlertCard({ alert, onResolve }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeColor}`}>
-              {getBadgeLabel(alert)}
-            </span>
+            <Badge variant={badgeVariant}>{getBadgeLabel(alert)}</Badge>
           </div>
 
           <p className="text-sm font-medium text-gray-900">{getAlertTitle(alert)}</p>
@@ -83,16 +85,16 @@ export function AlertCard({ alert, onResolve }: Props) {
 
           <div className="flex flex-wrap gap-2">
             {alert.triggered_value !== null && (
-              <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+              <Badge variant="secondary">
                 発報値: {alert.triggered_value}
                 {alert.unit ? ` ${alert.unit}` : ''}
-              </span>
+              </Badge>
             )}
             {alert.alertThresholdValue !== null && (
-              <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+              <Badge variant="secondary">
                 {alert.breach_direction === 'high' ? '上限' : '下限'}: {alert.alertThresholdValue}
                 {alert.unit ? ` ${alert.unit}` : ''}
-              </span>
+              </Badge>
             )}
           </div>
 
@@ -107,12 +109,13 @@ export function AlertCard({ alert, onResolve }: Props) {
         </div>
 
         {!isResolved && onResolve && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => onResolve(alert.id)}
-            className="shrink-0 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
           >
             解消
-          </button>
+          </Button>
         )}
       </div>
     </div>

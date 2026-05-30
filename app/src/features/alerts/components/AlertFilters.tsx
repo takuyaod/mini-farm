@@ -1,6 +1,8 @@
 'use client'
 
 import { useOptimistic, useTransition, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AlertCard } from './AlertCard'
 import { getAlerts } from '../api/getAlerts'
 import { resolveAlert } from '../api/resolveAlert'
@@ -99,112 +101,163 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
   return (
     <div className="space-y-4">
       {/* タブ */}
-      <div className="flex gap-1 rounded-lg border border-gray-200 bg-white p-1">
-        <button
-          onClick={() => handleTabChange('unresolved')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'unresolved'
-              ? 'bg-gray-900 text-white'
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          未解消
-          {unresolvedCount !== undefined && unresolvedCount > 0 && (
-            <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
-              {unresolvedCount}
-            </span>
+      <Tabs value={tab} onValueChange={(v) => handleTabChange(v as 'unresolved' | 'resolved')}>
+        <TabsList className="w-full">
+          <TabsTrigger value="unresolved" className="flex-1">
+            未解消
+            {unresolvedCount !== undefined && unresolvedCount > 0 && (
+              <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                {unresolvedCount}
+              </span>
+            )}
+            {unresolvedCount === 0 && (
+              <span className="rounded-full bg-gray-300 px-1.5 py-0.5 text-xs text-gray-600">
+                0
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="resolved" className="flex-1">
+            解消済み
+            {resolvedCount !== undefined && (
+              <span className="rounded-full bg-gray-400 px-1.5 py-0.5 text-xs text-gray-100">
+                {resolvedCount}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="unresolved" className="mt-0">
+          {/* ゾーン絞り込み */}
+          {zones.length > 1 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Button
+                variant={zoneId === undefined ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleZoneChange(undefined)}
+                className="rounded-full"
+              >
+                すべて
+              </Button>
+              {zones.map((zone) => (
+                <Button
+                  key={zone.id}
+                  variant={zoneId === zone.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleZoneChange(zone.id)}
+                  className="rounded-full"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: getZoneColor(zone.id) }}
+                  />
+                  {zone.name}
+                </Button>
+              ))}
+            </div>
           )}
-          {unresolvedCount === 0 && (
-            <span className="rounded-full bg-gray-300 px-1.5 py-0.5 text-xs text-gray-600">
-              0
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => handleTabChange('resolved')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'resolved'
-              ? 'bg-gray-900 text-white'
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          解消済み
-          {resolvedCount !== undefined && (
-            <span className="rounded-full bg-gray-400 px-1.5 py-0.5 text-xs text-gray-100">
-              {resolvedCount}
-            </span>
-          )}
-        </button>
-      </div>
 
-      {/* ゾーン絞り込み */}
-      {zones.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleZoneChange(undefined)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              zoneId === undefined
-                ? 'bg-gray-900 text-white'
-                : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            すべて
-          </button>
-          {zones.map((zone) => (
-            <button
-              key={zone.id}
-              onClick={() => handleZoneChange(zone.id)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                zoneId === zone.id
-                  ? 'bg-gray-900 text-white'
-                  : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: getZoneColor(zone.id) }}
-              />
-              {zone.name}
-            </button>
-          ))}
-        </div>
-      )}
+          {/* アラート一覧 */}
+          <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
+            {optimisticAlerts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                未解消のアラートはありません
+              </p>
+            ) : (
+              optimisticAlerts.map((alert) => (
+                <AlertCard
+                  key={alert.id}
+                  alert={alert}
+                  onResolve={handleResolve}
+                />
+              ))
+            )}
+          </div>
 
-      {/* アラート一覧 */}
-      <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
-        {optimisticAlerts.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500">
-            {tab === 'unresolved' ? '未解消のアラートはありません' : '解消済みのアラートはありません'}
-          </p>
-        ) : (
-          optimisticAlerts.map((alert) => (
-            <AlertCard
-              key={alert.id}
-              alert={alert}
-              onResolve={tab === 'unresolved' ? handleResolve : undefined}
-            />
-          ))
-        )}
-      </div>
-
-      {/* もっと見る */}
-      {optimisticAlerts.length > 0 && (
-        <div className="text-center">
-          {remainingCount > 0 ? (
-            <button
-              onClick={handleLoadMore}
-              disabled={isPending}
-              className="rounded-md border border-gray-200 bg-white px-6 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-            >
-              さらに読み込む（残り {remainingCount}件）
-            </button>
-          ) : (
-            displayedAlerts.length > 0 && (
-              <p className="text-sm text-gray-400">すべて表示しました</p>
-            )
+          {/* もっと見る */}
+          {optimisticAlerts.length > 0 && (
+            <div className="mt-4 text-center">
+              {remainingCount > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={handleLoadMore}
+                  disabled={isPending}
+                >
+                  さらに読み込む（残り {remainingCount}件）
+                </Button>
+              ) : (
+                displayedAlerts.length > 0 && (
+                  <p className="text-sm text-gray-400">すべて表示しました</p>
+                )
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        <TabsContent value="resolved" className="mt-0">
+          {/* ゾーン絞り込み */}
+          {zones.length > 1 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Button
+                variant={zoneId === undefined ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleZoneChange(undefined)}
+                className="rounded-full"
+              >
+                すべて
+              </Button>
+              {zones.map((zone) => (
+                <Button
+                  key={zone.id}
+                  variant={zoneId === zone.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleZoneChange(zone.id)}
+                  className="rounded-full"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: getZoneColor(zone.id) }}
+                  />
+                  {zone.name}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {/* アラート一覧 */}
+          <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
+            {optimisticAlerts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                解消済みのアラートはありません
+              </p>
+            ) : (
+              optimisticAlerts.map((alert) => (
+                <AlertCard
+                  key={alert.id}
+                  alert={alert}
+                />
+              ))
+            )}
+          </div>
+
+          {/* もっと見る */}
+          {optimisticAlerts.length > 0 && (
+            <div className="mt-4 text-center">
+              {remainingCount > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={handleLoadMore}
+                  disabled={isPending}
+                >
+                  さらに読み込む（残り {remainingCount}件）
+                </Button>
+              ) : (
+                displayedAlerts.length > 0 && (
+                  <p className="text-sm text-gray-400">すべて表示しました</p>
+                )
+              )}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
