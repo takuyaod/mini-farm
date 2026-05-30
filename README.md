@@ -102,6 +102,8 @@ cp .env.example .env
 
 **方法 B: ブラウザの DevTools から取得する**
 
+> **注意:** この操作は開発環境（ローカル）でのみ実施すること。本番環境のブラウザで同様の操作を行うと、実際のユーザーのトークンが漏洩するリスクがあるため絶対に行わないこと。
+
 1. Next.jsダッシュボード（`http://localhost:3000`）に GitHub OAuth でログインする
 2. DevTools を開き、**Application** タブ → **Cookies** → `http://localhost:3000` を選択する
 3. `sb-*-auth-token` という名前のクッキーを見つける

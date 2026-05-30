@@ -5,12 +5,12 @@ const DEV_INTERVAL_MS = 5000;
 const PORT = Number(process.env.PORT ?? 3001);
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://host.docker.internal:54321";
 const DEVICE_API_KEY = process.env.DEVICE_API_KEY;
-const USER_JWT_TOKEN = process.env.USER_JWT_TOKEN || "";
+const USER_JWT_TOKEN = process.env.USER_JWT_TOKEN ?? "";
 
 // USER_JWT_TOKEN が設定されている場合はそちらを優先する。
 // 未設定の場合は DEVICE_API_KEY を使用する。
 if (!USER_JWT_TOKEN && !DEVICE_API_KEY) {
-  console.error("DEVICE_API_KEY is not set. Copy .env.example to .env and set the value.");
+  console.error("Either DEVICE_API_KEY or USER_JWT_TOKEN must be set. Copy .env.example to .env and set the value.");
   process.exit(1);
 }
 
