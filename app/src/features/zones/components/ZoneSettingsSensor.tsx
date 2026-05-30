@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { decommissionSensor, type DecommissionSensorState } from '../api/decommissionSensor'
 import type { Sensor } from '@/features/dashboard/types'
 
@@ -29,14 +30,16 @@ function SensorRow({ sensor, zoneId }: SensorRowProps) {
         <form action={formAction}>
           <input type="hidden" name="sensor_id" value={sensor.id} />
           <input type="hidden" name="zone_id" value={zoneId} />
-          <button
+          <Button
             type="submit"
+            variant="outline"
+            size="sm"
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="border-red-200 text-red-600 hover:bg-red-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {isPending ? '削除中...' : '削除'}
-          </button>
+          </Button>
         </form>
         {state.error && <p className="text-xs text-red-500">{state.error}</p>}
       </div>

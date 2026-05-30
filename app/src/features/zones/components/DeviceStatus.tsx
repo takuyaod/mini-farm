@@ -1,4 +1,5 @@
 import { Wifi, WifiOff } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { OFFLINE_THRESHOLD_MIN } from '@/constants'
 import type { Device, Sensor } from '../types'
 
@@ -34,12 +35,9 @@ export function DeviceStatus({ devices }: Props) {
               <span className="text-sm text-gray-700">{device.name ?? 'デバイス'}</span>
               <div className="flex flex-wrap gap-1">
                 {activeSensorTypes.map((type) => (
-                  <span
-                    key={type}
-                    className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                  >
+                  <Badge key={type} variant="secondary">
                     {type}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>

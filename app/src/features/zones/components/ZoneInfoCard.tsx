@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Scissors } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { HarvestModal } from './HarvestModal'
 import { getDaysFromPlanting } from '../utils'
 import type { Alert, Zone, ZonePlant } from '../types'
@@ -36,38 +38,31 @@ export function ZoneInfoCard({ zone, currentPlant, unresolvedAlerts }: Props) {
             )}
           </div>
           <div className="mt-1.5 flex items-center gap-2">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                zone.type === 'hydroponic'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-              }`}
-            >
+            <Badge variant={zone.type === 'hydroponic' ? 'blue' : 'green'}>
               {zone.type === 'hydroponic' ? '水耕' : '土壌'}
-            </span>
+            </Badge>
             {alertCount > 0 && (
-              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white">
+              <Badge variant="destructive">
                 ⚠ {alertCount}件
-              </span>
+              </Badge>
             )}
           </div>
         </div>
 
         {currentPlant ? (
-          <button
+          <Button
             onClick={() => setHarvestOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+            className="shrink-0 bg-green-600 hover:bg-green-700"
           >
             <Scissors className="h-4 w-4" />
             収穫する
-          </button>
+          </Button>
         ) : (
-          <Link
-            href={`/zones/${zone.id}/settings`}
-            className="shrink-0 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-          >
-            新しい作付けを開始する
-          </Link>
+          <Button variant="outline" asChild className="shrink-0">
+            <Link href={`/zones/${zone.id}/settings`}>
+              新しい作付けを開始する
+            </Link>
+          </Button>
         )}
       </div>
 

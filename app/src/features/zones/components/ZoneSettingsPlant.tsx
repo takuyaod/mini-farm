@@ -1,6 +1,8 @@
 'use client'
 
 import { useActionState, useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { startCultivation, type StartCultivationState } from '../api/startCultivation'
 import type { Plant } from '@/features/dashboard/types'
 
@@ -51,24 +53,24 @@ export function ZoneSettingsPlant({ zoneId, plants }: Props) {
         <label htmlFor="planted-at" className="text-sm font-medium text-gray-700">
           植付日 <span className="text-red-500">*</span>
         </label>
-        <input
+        <Input
           id="planted-at"
           name="planted_at"
           type="date"
           defaultValue={today}
           required
-          className="w-44 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+          className="w-44 focus:border-green-500 focus:ring-green-500"
         />
       </div>
       {state.error && <p className="text-sm text-red-500">{state.error}</p>}
       {state.success && <p className="text-sm text-green-600">作付けを開始しました</p>}
-      <button
+      <Button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+        className="bg-green-600 hover:bg-green-700"
       >
         {isPending ? '登録中...' : '作付けを開始'}
-      </button>
+      </Button>
     </form>
   )
 }

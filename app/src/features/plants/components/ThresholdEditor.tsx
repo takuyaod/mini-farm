@@ -1,6 +1,8 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { Plant, PlantThreshold, SensorTypeMaster } from '../types'
 import { upsertThresholds } from '../api/upsertThresholds'
 import type { UpsertThresholdsState } from '../api/upsertThresholds'
@@ -66,44 +68,44 @@ export function ThresholdEditor({ plants, sensorTypes, thresholdsByPlantId }: Pr
                     <div>
                       <p className="mb-1.5 text-xs font-medium text-gray-500">適正値</p>
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           name={`optimal_min_${st.id}`}
                           type="number"
                           step="0.1"
                           defaultValue={t?.optimal_min ?? ''}
                           placeholder="最小"
-                          className="w-24 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                          className="w-24 focus:border-green-500 focus:ring-green-500"
                         />
                         <span className="text-xs text-gray-400">〜</span>
-                        <input
+                        <Input
                           name={`optimal_max_${st.id}`}
                           type="number"
                           step="0.1"
                           defaultValue={t?.optimal_max ?? ''}
                           placeholder="最大"
-                          className="w-24 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                          className="w-24 focus:border-green-500 focus:ring-green-500"
                         />
                       </div>
                     </div>
                     <div>
                       <p className="mb-1.5 text-xs font-medium text-gray-500">アラート閾値</p>
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           name={`alert_min_${st.id}`}
                           type="number"
                           step="0.1"
                           defaultValue={t?.alert_min ?? ''}
                           placeholder="最小"
-                          className="w-24 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                          className="w-24 focus:border-amber-500 focus:ring-amber-500"
                         />
                         <span className="text-xs text-gray-400">〜</span>
-                        <input
+                        <Input
                           name={`alert_max_${st.id}`}
                           type="number"
                           step="0.1"
                           defaultValue={t?.alert_max ?? ''}
                           placeholder="最大"
-                          className="w-24 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                          className="w-24 focus:border-amber-500 focus:ring-amber-500"
                         />
                       </div>
                     </div>
@@ -119,13 +121,13 @@ export function ThresholdEditor({ plants, sensorTypes, thresholdsByPlantId }: Pr
               <p className="text-sm text-green-600">閾値を保存しました</p>
             )}
             {filteredSensorTypes.length > 0 && (
-              <button
+              <Button
                 type="submit"
                 disabled={isPending}
-                className="self-start rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="self-start bg-green-600 hover:bg-green-700"
               >
                 {isPending ? '保存中...' : '閾値を保存'}
-              </button>
+              </Button>
             )}
           </form>
         )}

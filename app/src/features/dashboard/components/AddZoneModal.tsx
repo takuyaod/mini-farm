@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { createZone } from '@/features/dashboard/api/createZone'
 import type { CreateZoneState } from '@/features/dashboard/api/createZone'
 
@@ -45,12 +47,11 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
             <label htmlFor="zone-name" className="text-sm font-medium text-gray-700">
               ゾーン名 <span className="text-red-500">*</span>
             </label>
-            <input
+            <Input
               id="zone-name"
               name="name"
               type="text"
               placeholder="例: 温室A"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -81,21 +82,21 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
           </div>
           {state.error && <p className="text-sm text-red-500">{state.error}</p>}
           <div className="flex justify-end gap-2 pt-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               キャンセル
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isPending}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {isPending ? '作成中...' : '作成'}
-            </button>
+            </Button>
           </div>
         </form>
       </DialogContent>

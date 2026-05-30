@@ -8,6 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { harvestZonePlant, type HarvestState } from '../api/harvestZonePlant'
 import { getDaysFromPlanting, formatPlantingDate } from '../utils'
 import type { ZonePlant } from '../types'
@@ -36,20 +39,14 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
           <div className="mt-2 space-y-4">
             <p className="text-sm text-gray-600">このゾーンの栽培が終了しました。</p>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
+              <Button variant="outline" type="button" onClick={onClose}>
                 閉じる
-              </button>
-              <Link
-                href={`/zones/${zoneId}/settings`}
-                onClick={onClose}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-              >
-                新しい作付けを開始する
-              </Link>
+              </Button>
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link href={`/zones/${zoneId}/settings`} onClick={onClose}>
+                  新しい作付けを開始する
+                </Link>
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -78,7 +75,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
                 収穫量 <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-2">
-                <input
+                <Input
                   id="harvest-weight"
                   name="harvest_weight_g"
                   type="number"
@@ -86,7 +83,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
                   step="1"
                   defaultValue="0"
                   required
-                  className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-32"
                 />
                 <span className="text-sm text-gray-600">g</span>
               </div>
@@ -96,11 +93,10 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
               <label htmlFor="harvest-notes" className="text-sm font-medium text-gray-700">
                 メモ（任意）
               </label>
-              <textarea
+              <Textarea
                 id="harvest-notes"
                 name="notes"
                 rows={3}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
@@ -111,21 +107,21 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
             {state.error && <p className="text-sm text-red-500">{state.error}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={isPending}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 キャンセル
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isPending}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="bg-green-600 hover:bg-green-700"
               >
                 {isPending ? '記録中...' : '収穫を確定'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

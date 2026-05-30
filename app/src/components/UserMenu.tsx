@@ -1,19 +1,25 @@
 'use client'
 
-import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { LogOut, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 type Props = {
   user: User | null
 }
 
 export function UserMenu({ user }: Props) {
-  const [open, setOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -27,48 +33,35 @@ export function UserMenu({ user }: Props) {
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 hover:ring-2 hover:ring-gray-300 focus:outline-none"
-      >
-        {avatarUrl ? (
-          <Image src={avatarUrl} alt={fullName ?? 'avatar'} width={32} height={32} className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-sm font-semibold text-gray-600">{initial}</span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray-200 hover:ring-2 hover:ring-gray-300 focus:outline-none">
+          {avatarUrl ? (
+            <Image src={avatarUrl} alt={fullName ?? 'avatar'} width={32} height={32} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-sm font-semibold text-gray-600">{initial}</span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {user && (
+          <DropdownMenuLabel className="border-b">
+            {fullName && <p className="text-sm font-medium text-gray-900">{fullName}</p>}
+            <p className="truncate text-xs text-gray-500">{user.email}</p>
+          </DropdownMenuLabel>
         )}
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border bg-white shadow-lg">
-            {user && (
-              <div className="border-b px-4 py-3">
-                {fullName && <p className="text-sm font-medium text-gray-900">{fullName}</p>}
-                <p className="truncate text-xs text-gray-500">{user.email}</p>
-              </div>
-            )}
-            <div className="py-1">
-              <Link
-                href="/settings/plants"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                onClick={() => setOpen(false)}
-              >
-                <Settings className="h-4 w-4" />
-                植物マスタ管理
-              </Link>
-              <button
-                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-                ログアウト
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+        <DropdownMenuItem asChild>
+          <Link href="/settings/plants" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            植物マスタ管理
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="h-4 w-4" />
+          ログアウト
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { createPlant } from '../api/createPlant'
 import type { CreatePlantState } from '../api/createPlant'
 
@@ -23,12 +25,12 @@ export function AddPlantForm() {
         <label htmlFor="plant-name" className="text-sm font-medium text-gray-700">
           植物名 <span className="text-red-500">*</span>
         </label>
-        <input
+        <Input
           id="plant-name"
           name="name"
           type="text"
           placeholder="例: バジル"
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+          className="focus:border-green-500 focus:ring-green-500"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -68,14 +70,14 @@ export function AddPlantForm() {
       </div>
       {state.error && <p className="text-sm text-red-500">{state.error}</p>}
       {state.success && <p className="text-sm text-green-600">植物を追加しました</p>}
-      <button
+      <Button
         type="submit"
         disabled={isPending}
-        className="flex items-center gap-2 self-start rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+        className="self-start bg-green-600 hover:bg-green-700"
       >
         <Plus className="h-4 w-4" />
         {isPending ? '追加中...' : '植物を追加'}
-      </button>
+      </Button>
     </form>
   )
 }

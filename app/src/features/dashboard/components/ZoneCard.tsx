@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { WifiOff } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { SensorTile } from './SensorTile'
 import { AlertList } from './AlertList'
 import type { ZoneCardData } from '../types'
@@ -45,27 +46,21 @@ export function ZoneCard({ data }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-gray-900">{zone.name}</h3>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                zone.type === 'hydroponic'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-              }`}
-            >
+            <Badge variant={zone.type === 'hydroponic' ? 'blue' : 'green'}>
               {zone.type === 'hydroponic' ? '水耕' : '土壌'}
-            </span>
+            </Badge>
             {alertCount > 0 && (
-              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white">
+              <Badge variant="destructive">
                 ⚠ {alertCount}件
-              </span>
+              </Badge>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {isOffline && (
-              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+              <Badge variant="secondary" className="gap-1">
                 <WifiOff className="h-3 w-3" />
                 オフライン
-              </span>
+              </Badge>
             )}
             <span className="text-xs text-gray-400">{deviceCount}台</span>
           </div>
