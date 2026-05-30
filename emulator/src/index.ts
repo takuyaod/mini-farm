@@ -10,7 +10,7 @@ const USER_JWT_TOKEN = process.env.USER_JWT_TOKEN ?? "";
 // USER_JWT_TOKEN が設定されている場合はそちらを優先する。
 // 未設定の場合は DEVICE_API_KEY を使用する。
 if (!USER_JWT_TOKEN && !DEVICE_API_KEY) {
-  console.error("Either DEVICE_API_KEY or USER_JWT_TOKEN must be set. Copy .env.example to .env and set the value.");
+  console.error("Either DEVICE_API_KEY or USER_JWT_TOKEN must be set. Set DEVICE_API_KEY in the root .env file.");
   process.exit(1);
 }
 
