@@ -101,7 +101,7 @@ export default async function ZoneSettingsPage({
           {devices.length > 0 && (
             <section className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-base font-medium text-gray-800">APIキー再発行</h2>
-              <ReissueApiKeySection devices={devices} />
+              <ReissueApiKeySection devices={devices} zoneId={id} />
             </section>
           )}
 
