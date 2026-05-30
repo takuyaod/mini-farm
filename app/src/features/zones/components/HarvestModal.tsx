@@ -42,7 +42,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
               <Button variant="outline" type="button" onClick={onClose}>
                 閉じる
               </Button>
-              <Button asChild className="bg-green-600 hover:bg-green-700">
+              <Button asChild variant="green">
                 <Link href={`/zones/${zoneId}/settings`} onClick={onClose}>
                   新しい作付けを開始する
                 </Link>
@@ -117,8 +117,8 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
               </Button>
               <Button
                 type="submit"
+                variant="green"
                 disabled={isPending}
-                className="bg-green-600 hover:bg-green-700"
               >
                 {isPending ? '記録中...' : '収穫を確定'}
               </Button>

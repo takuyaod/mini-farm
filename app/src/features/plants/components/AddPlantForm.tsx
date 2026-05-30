@@ -72,8 +72,9 @@ export function AddPlantForm() {
       {state.success && <p className="text-sm text-green-600">植物を追加しました</p>}
       <Button
         type="submit"
+        variant="green"
         disabled={isPending}
-        className="self-start bg-green-600 hover:bg-green-700"
+        className="self-start"
       >
         <Plus className="h-4 w-4" />
         {isPending ? '追加中...' : '植物を追加'}

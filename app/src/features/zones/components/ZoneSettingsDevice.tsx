@@ -45,8 +45,8 @@ export function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
         {state.error && <p className="text-sm text-red-500">{state.error}</p>}
         <Button
           type="submit"
+          variant="green"
           disabled={isPending}
-          className="bg-green-600 hover:bg-green-700"
         >
           <Plus className="h-4 w-4" />
           {isPending ? '追加中...' : 'デバイスを追加'}

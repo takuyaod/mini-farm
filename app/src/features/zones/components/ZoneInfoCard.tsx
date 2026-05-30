@@ -52,7 +52,8 @@ export function ZoneInfoCard({ zone, currentPlant, unresolvedAlerts }: Props) {
         {currentPlant ? (
           <Button
             onClick={() => setHarvestOpen(true)}
-            className="shrink-0 bg-green-600 hover:bg-green-700"
+            variant="green"
+            className="shrink-0"
           >
             <Scissors className="h-4 w-4" />
             収穫する

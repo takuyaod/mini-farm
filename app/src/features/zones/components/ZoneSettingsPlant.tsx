@@ -66,8 +66,8 @@ export function ZoneSettingsPlant({ zoneId, plants }: Props) {
       {state.success && <p className="text-sm text-green-600">作付けを開始しました</p>}
       <Button
         type="submit"
+        variant="green"
         disabled={isPending}
-        className="bg-green-600 hover:bg-green-700"
       >
         {isPending ? '登録中...' : '作付けを開始'}
       </Button>

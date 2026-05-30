@@ -123,8 +123,9 @@ export function ThresholdEditor({ plants, sensorTypes, thresholdsByPlantId }: Pr
             {filteredSensorTypes.length > 0 && (
               <Button
                 type="submit"
+                variant="green"
                 disabled={isPending}
-                className="self-start bg-green-600 hover:bg-green-700"
+                className="self-start"
               >
                 {isPending ? '保存中...' : '閾値を保存'}
               </Button>
