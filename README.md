@@ -55,29 +55,20 @@ GitHub 側は `OAuth Apps` を使う（`GitHub Apps` ではない）。
 
 エミュレータは起動時に停止状態で待機する。送信開始は `POST http://localhost:3001/start`。
 
-### エミュレータ単体のセットアップ
+### エミュレータの環境変数
 
-docker compose を使わずにエミュレータを直接起動する場合は、以下の手順で環境変数を設定する。
+docker compose 経由で起動する場合、エミュレータはルートの `.env` から環境変数を読み込む。`DEVICE_API_KEY` を設定しておけば動作する（デフォルト値 `dev-api-key-001` は `supabase/seed.sql` に登録済み）。
 
 ```bash
-cd emulator
-
-# .env.example をコピーして .env を作成する
-cp .env.example .env
-
-# .env を開いて必要な値を設定する（次のセクション参照）
+# ルートの .env（初回セットアップ時に cp .env.example .env で作成済み）
+DEVICE_API_KEY=dev-api-key-001
 ```
 
-**環境変数一覧（`emulator/.env`）**
+`ts-node` でホストから直接起動する場合はインラインで指定する。
 
-| 変数名 | デフォルト | 説明 |
-|---|---|---|
-| `PORT` | `3001` | エミュレータが待ち受けるポート番号 |
-| `SUPABASE_URL` | `http://host.docker.internal:54321` | Supabase ローカル開発用 URL |
-| `DEVICE_API_KEY` | `dev-api-key-001` | デバイス用 API キー（seed.sql に登録済みの開発用キー） |
-| `USER_JWT_TOKEN` | （空） | ログインユーザーの JWT トークン（オプション）。設定時は `DEVICE_API_KEY` より優先される |
-
-> ホストから `ts-node` で直接起動する場合は `SUPABASE_URL=http://localhost:54321` に変更する。
+```bash
+DEVICE_API_KEY=dev-api-key-001 SUPABASE_URL=http://localhost:54321 npx ts-node emulator/src/index.ts
+```
 
 ### 制御エンドポイント
 
@@ -122,17 +113,10 @@ console.log(token.access_token);
 
 > または、DevTools の **Application > Local Storage** に `sb-*-auth-token` が保存されている場合は、そこから `access_token` フィールドの値をコピーする。
 
-#### ステップ 2: .env に設定してエミュレータを再起動する
+#### ステップ 2: ルートの .env に設定してエミュレータを再起動する
 
 ```bash
-# emulator/.env を開いて USER_JWT_TOKEN に取得したトークンを設定する
-USER_JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**docker compose を使っている場合:**
-
-```bash
-# ルートの .env にも同様に設定する
+# ルートの .env に取得したトークンを設定する
 USER_JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # エミュレータコンテナを再起動する
