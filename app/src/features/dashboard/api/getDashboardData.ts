@@ -48,7 +48,9 @@ export async function getDashboardData(): Promise<DashboardData> {
   const devices: Device[] = devicesRes.data ?? []
   const zonePlants: ZonePlant[] = zonePlantsRes.data ?? []
 
-  const allSensorIds = devices.flatMap((d: Device) => d.sensors.map((s: Sensor) => s.id))
+  const allSensorIds = devices.flatMap((d: Device) =>
+    d.sensors.filter((s: Sensor) => s.is_active).map((s: Sensor) => s.id)
+  )
 
   const [alertsData, readingsData, thresholdsData] = await Promise.all([
     allSensorIds.length > 0
@@ -146,5 +148,5 @@ export async function getDashboardData(): Promise<DashboardData> {
     unresolvedAlertCount: allAlerts.length,
   }
 
-  return { zones: zoneCards, totalUnresolvedAlerts: allAlerts.length, summary }
+  return { zones: zoneCards, totalUnresolvedAlerts: summary.unresolvedAlertCount, summary }
 }

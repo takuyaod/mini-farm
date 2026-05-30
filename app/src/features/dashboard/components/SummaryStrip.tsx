@@ -1,4 +1,5 @@
 import { Activity, AlertTriangle, Cpu, Layers3 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { DashboardSummary } from '../types'
 
 type Props = {
@@ -6,7 +7,7 @@ type Props = {
 }
 
 type Item = {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   value: number
   unit: string
