@@ -12,13 +12,14 @@ export async function updateZoneName(
   _prev: UpdateZoneNameState,
   formData: FormData
 ): Promise<UpdateZoneNameState> {
-  const name = (formData.get('name') as string | null)?.trim() ?? ''
-  const zoneId = formData.get('zone_id') as string
-
-  if (!name) return { success: false, error: 'ゾーン名を入力してください' }
-
   const user = await getUser()
   if (!user) return { success: false, error: '認証が必要です' }
+
+  const name = (formData.get('name') as string | null)?.trim() ?? ''
+  const zoneId = formData.get('zone_id') as string | null
+
+  if (!name) return { success: false, error: 'ゾーン名を入力してください' }
+  if (!zoneId) return { success: false, error: '無効なリクエストです' }
 
   const supabase = await createClient()
 
