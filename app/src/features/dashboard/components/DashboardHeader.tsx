@@ -7,18 +7,10 @@ import { AddZoneModal } from './AddZoneModal'
 
 type Props = {
   zoneCount: number
+  today: string
 }
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  }).format(date)
-}
-
-export function DashboardHeader({ zoneCount }: Props) {
+export function DashboardHeader({ zoneCount, today }: Props) {
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -34,7 +26,7 @@ export function DashboardHeader({ zoneCount }: Props) {
             ダッシュボード
           </p>
           <p className="mt-0.5 text-sm text-gray-500">
-            {formatDate(new Date())} &middot; {zoneCount} ゾーンを監視中
+            {today} &middot; {zoneCount} ゾーンを監視中
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -46,14 +38,17 @@ export function DashboardHeader({ zoneCount }: Props) {
             <RefreshCw className="h-3.5 w-3.5" />
             更新
           </button>
-          <button
-            type="button"
-            disabled
-            className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-400 ring-1 ring-inset ring-[#e6e9e5] opacity-50 cursor-not-allowed"
-          >
-            <Download className="h-3.5 w-3.5" />
-            エクスポート
-          </button>
+          <div title="準備中">
+            <button
+              type="button"
+              disabled
+              aria-label="エクスポート（準備中）"
+              className="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-400 ring-1 ring-inset ring-[#e6e9e5] opacity-50 cursor-not-allowed"
+            >
+              <Download className="h-3.5 w-3.5" />
+              エクスポート
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => setModalOpen(true)}

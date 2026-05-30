@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -19,12 +19,16 @@ type Props = {
 
 export function AddZoneModal({ open, onOpenChange }: Props) {
   const [state, formAction, isPending] = useActionState(createZone, initialState)
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange
+  })
 
   useEffect(() => {
     if (state.success) {
-      onOpenChange(false)
+      onOpenChangeRef.current(false)
     }
-  }, [state.success, onOpenChange])
+  }, [state.success])
 
   const handleOpenChange = (next: boolean) => {
     if (!isPending) onOpenChange(next)
