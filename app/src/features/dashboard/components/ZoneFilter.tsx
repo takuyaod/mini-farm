@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { ZoneCard } from './ZoneCard'
+import { AddZoneModal } from './AddZoneModal'
 import type { ZoneCardData } from '../types'
 
 type FilterTab = 'all' | 'hydroponic' | 'soil' | 'alert'
@@ -19,6 +21,7 @@ type Props = {
 
 export function ZoneFilter({ zones }: Props) {
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [modalOpen, setModalOpen] = useState(false)
 
   const filteredZones = zones.filter((data) => {
     if (activeTab === 'all') return true
@@ -26,6 +29,9 @@ export function ZoneFilter({ zones }: Props) {
     if (activeTab === 'soil') return data.zone.type === 'soil'
     if (activeTab === 'alert') return data.unresolvedAlerts.length > 0
   })
+
+  const showAddCard = activeTab === 'all'
+  const gridItemCount = filteredZones.length + (showAddCard ? 1 : 0)
 
   return (
     <div>
@@ -52,11 +58,11 @@ export function ZoneFilter({ zones }: Props) {
       </div>
 
       {/* ゾーングリッド */}
-      {filteredZones.length > 0 ? (
+      {gridItemCount > 0 ? (
         <div
-          className={filteredZones.length === 1 ? 'flex flex-col' : 'grid gap-4'}
+          className={gridItemCount === 1 ? 'flex flex-col' : 'grid gap-4'}
           style={
-            filteredZones.length > 1
+            gridItemCount > 1
               ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
               : undefined
           }
@@ -64,12 +70,24 @@ export function ZoneFilter({ zones }: Props) {
           {filteredZones.map((zoneData) => (
             <ZoneCard key={zoneData.zone.id} data={zoneData} />
           ))}
+          {showAddCard && (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c8d0c6] bg-white text-[#8a978f] transition-colors hover:border-[#246e3a] hover:bg-[#f2f7f3] hover:text-[#246e3a]"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="text-sm font-medium">ゾーンを追加</span>
+            </button>
+          )}
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-[#8a978f]">
           該当するゾーンがありません
         </p>
       )}
+
+      <AddZoneModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   )
 }
