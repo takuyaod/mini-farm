@@ -126,8 +126,9 @@ app.get("/status", (_req, res) => {
 // バッチ送信テスト用エンドポイント（開発専用）
 // count パラメータで送信バッチ数を指定（デフォルト: 3）
 app.post("/start-batch", async (req, res) => {
-  const count = Math.min(Number(req.body?.count ?? 3), 20);
-  if (!Number.isInteger(count) || count < 1) {
+  const rawCount = req.body?.count ?? 3;
+  const count = Number(rawCount);
+  if (!Number.isInteger(count) || count < 1 || count > 20) {
     res.status(400).json({ error: "count must be a positive integer (max 20)" });
     return;
   }

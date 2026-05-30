@@ -96,6 +96,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "batches array is required" }, 400)
   }
 
+  if (body.batches.length > 100) {
+    return jsonResponse({ error: "batches must not exceed 100 items" }, 400)
+  }
+
   // 3. センサー種別マスタを一括取得（全バッチで共有）
   const { data: sensorTypeMasters } = await supabase
     .from("sensor_type_masters")
@@ -139,8 +143,28 @@ Deno.serve(async (req) => {
     (existingSensors ?? []).map((s: { id: string; sensor_type_id: string }) => [s.sensor_type_id, s.id]),
   )
 
-  // 6. 各バッチを受け取り順に処理
+  // 6. idempotency_key の一括重複チェック（N+1クエリを回避）
+  const allIdempotencyKeys = body.batches
+    .map((b) => b.idempotency_key)
+    .filter((k): k is string => typeof k === "string")
+
+  const existingIdempotencyKeySet = new Set<string>()
+  if (allIdempotencyKeys.length > 0) {
+    const { data: existingReadings } = await supabase
+      .from("readings")
+      .select("idempotency_key")
+      .in("idempotency_key", allIdempotencyKeys)
+
+    for (const r of existingReadings ?? []) {
+      if (r.idempotency_key) {
+        existingIdempotencyKeySet.add(r.idempotency_key)
+      }
+    }
+  }
+
+  // 7. 各バッチを受け取り順に処理
   const results: BatchResult[] = []
+  let anyInsertSucceeded = false
 
   for (const batch of body.batches) {
     if (!Array.isArray(batch.readings) || batch.readings.length === 0) {
@@ -155,18 +179,10 @@ Deno.serve(async (req) => {
 
     const recordedAt = batch.timestamp ?? new Date().toISOString()
 
-    // idempotency_key の重複チェック
-    if (batch.idempotency_key) {
-      const { data: existing } = await supabase
-        .from("readings")
-        .select("id")
-        .eq("idempotency_key", batch.idempotency_key)
-        .maybeSingle()
-
-      if (existing) {
-        results.push({ accepted: [], skipped: [], idempotent: true })
-        continue
-      }
+    // idempotency_key の重複チェック（事前に一括取得済みの結果を参照）
+    if (batch.idempotency_key && existingIdempotencyKeySet.has(batch.idempotency_key)) {
+      results.push({ accepted: [], skipped: [], idempotent: true })
+      continue
     }
 
     const accepted: string[] = []
@@ -240,6 +256,7 @@ Deno.serve(async (req) => {
     }
 
     processedSensors.forEach((ps) => accepted.push(ps.sensor_type))
+    anyInsertSucceeded = true
 
     // アラート判定
     if (zonePlant && thresholdMap.size > 0) {
@@ -292,14 +309,17 @@ Deno.serve(async (req) => {
     results.push({ accepted, skipped })
   }
 
-  // 7. last_seen_at を一括更新（全バッチ処理完了後に1回のみ実行）
-  const { error: updateDeviceError } = await supabase
-    .from("devices")
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq("id", device.id)
+  // 8. last_seen_at を一括更新（全バッチ処理完了後に1回のみ実行）
+  // INSERT が1件でも成功した場合のみ更新し、readings/index.ts の設計と一貫性を持たせる
+  if (anyInsertSucceeded) {
+    const { error: updateDeviceError } = await supabase
+      .from("devices")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("id", device.id)
 
-  if (updateDeviceError) {
-    console.error("Failed to update last_seen_at:", updateDeviceError.message)
+    if (updateDeviceError) {
+      console.error("Failed to update last_seen_at:", updateDeviceError.message)
+    }
   }
 
   return jsonResponse({ results })
