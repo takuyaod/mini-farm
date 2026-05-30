@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { createClient, getClaims } from '@/lib/supabase/server'
+import { ZoneSettingsName } from '@/features/zones/components/ZoneSettingsName'
 import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant'
 import { AddDeviceForm, ReissueApiKeySection } from '@/features/zones/components/ZoneSettingsDevice'
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
@@ -71,6 +72,11 @@ export default async function ZoneSettingsPage({
         </div>
 
         <div className="space-y-4">
+          <section className="rounded-xl bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-base font-medium text-gray-800">ゾーン名を変更</h2>
+            <ZoneSettingsName zoneId={id} currentName={zone.name} />
+          </section>
+
           {!hasCurrentPlant && (
             <section className="rounded-xl bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-base font-medium text-gray-800">作付けを開始</h2>
