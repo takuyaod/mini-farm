@@ -54,60 +54,60 @@ export function SensorTileDetail({ sensor, isOffline, isSelected, onClick }: Pro
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-md border p-2 text-left transition-colors ${
+      className={`w-full rounded-md p-2 text-left transition-colors ${
         sensor.hasAlert
-          ? 'border-red-300 bg-red-50'
+          ? 'border border-alert-border bg-alert-bg'
           : isSelected
-            ? 'border-[1.5px] border-blue-400 bg-blue-50'
-            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+            ? 'border-[1.5px] border-brand-default bg-surface-muted'
+            : 'border border-surface-border bg-surface-bg hover:bg-surface-muted'
       }`}
     >
       <div className="flex items-center justify-between gap-1">
         <span
           className={`text-xs font-medium ${
-            sensor.hasAlert ? 'text-red-700' : 'text-gray-600'
+            sensor.hasAlert ? 'text-alert-text' : 'text-content-secondary'
           }`}
         >
           {label}
         </span>
         <div className="flex items-center gap-1">
-          {isOffline && <span className="text-xs text-gray-400">最終値</span>}
+          {isOffline && <span className="text-[10px] text-content-muted">最終値</span>}
           {isSelected && !sensor.hasAlert && (
-            <span className="text-xs font-medium text-blue-600">グラフ表示中</span>
+            <span className="text-[10px] font-medium text-brand-default">グラフ表示中</span>
           )}
         </div>
       </div>
 
       {alertLabel && (
-        <div className="text-xs font-medium text-red-600">{alertLabel}</div>
+        <div className="text-xs font-medium text-alert-text">{alertLabel}</div>
       )}
 
       <div
         className={`mt-0.5 text-base font-semibold tabular-nums ${
-          isOffline ? 'text-gray-400' : sensor.hasAlert ? 'text-red-700' : 'text-gray-900'
+          isOffline ? 'text-content-muted' : sensor.hasAlert ? 'text-alert-text' : 'text-content-primary'
         }`}
       >
         {value !== undefined ? (
           <>
             {value.toFixed(1)}
-            {unit && <span className="ml-0.5 text-xs font-normal text-gray-500">{unit}</span>}
+            {unit && <span className="ml-0.5 text-xs font-normal text-content-secondary">{unit}</span>}
           </>
         ) : (
-          <span className="text-sm text-gray-400">—</span>
+          <span className="text-sm text-content-muted">—</span>
         )}
       </div>
 
       {showBar && valuePercent !== null && (
         <>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-alert-hover">
             <div
               className={`h-full w-1 rounded-full transition-all ${
-                inOptimalRange === false ? 'bg-red-500' : 'bg-green-500'
+                inOptimalRange === false ? 'bg-alert-text' : 'bg-brand-default'
               }`}
               style={{ marginLeft: `calc(${valuePercent}% - 2px)` }}
             />
           </div>
-          <div className="mt-0.5 flex justify-between text-[10px] text-gray-400">
+          <div className="mt-0.5 flex justify-between text-[10px] text-content-muted">
             <span>{threshold?.alert_min ?? ''}</span>
             <span>
               {threshold?.optimal_min ?? ''}

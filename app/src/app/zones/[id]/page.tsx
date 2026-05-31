@@ -24,7 +24,7 @@ export default async function ZoneDetailPage({
   const sensorIds = sensors.map((s) => s.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-bg">
       <ZoneRealtimeProvider sensorIds={sensorIds} channelKey={id} />
       <Header alertCount={totalUnresolvedAlerts} />
       <main className="mx-auto max-w-3xl px-4 py-6">
@@ -33,16 +33,16 @@ export default async function ZoneDetailPage({
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className="rounded-md p-1 text-gray-500 hover:bg-gray-200"
+              className="rounded-md p-1 text-content-secondary hover:bg-surface-muted"
               aria-label="ホームへ戻る"
             >
               <ChevronLeft className="h-5 w-5" />
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">{zone.name}</h1>
+            <h1 className="text-xl font-bold text-content-primary">{zone.name}</h1>
           </div>
           <Link
             href={`/zones/${zone.id}/settings`}
-            className="rounded-md p-1 text-gray-500 hover:bg-gray-200"
+            className="rounded-md p-1 text-content-secondary hover:bg-surface-muted"
             aria-label="ゾーン設定"
           >
             <Settings className="h-5 w-5" />
@@ -51,7 +51,7 @@ export default async function ZoneDetailPage({
 
         {/* アラートバナー */}
         {unresolvedAlerts.length > 0 && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-lg border border-alert-border bg-alert-bg px-4 py-3 text-sm text-alert-text">
             <span className="font-medium">未解消アラート {unresolvedAlerts.length} 件</span>
           </div>
         )}

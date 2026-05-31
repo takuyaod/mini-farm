@@ -20,21 +20,21 @@ export function ZoneInfoCard({ zone, currentPlant, unresolvedAlerts }: Props) {
   const alertCount = unresolvedAlerts.length
 
   return (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white p-4 ring-1 ring-surface-border shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             {currentPlant ? (
               <>
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-lg font-semibold text-content-primary">
                   {currentPlant.plants.name}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-content-secondary">
                   植付から {getDaysFromPlanting(currentPlant.planted_at)} 日
                 </span>
               </>
             ) : (
-              <span className="text-lg font-semibold text-gray-400">作付けなし</span>
+              <span className="text-lg font-semibold text-content-muted">作付けなし</span>
             )}
           </div>
           <div className="mt-1.5 flex items-center gap-2">

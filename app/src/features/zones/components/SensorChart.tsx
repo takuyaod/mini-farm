@@ -59,11 +59,11 @@ type CustomTooltipProps = {
 function CustomTooltip({ active, payload, label, unit }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null
   return (
-    <div className="rounded-md border bg-white px-3 py-2 shadow-md text-xs">
-      <p className="text-gray-500">{label ? formatTooltipTime(label) : ''}</p>
-      <p className="font-semibold text-gray-900">
+    <div className="rounded-md border border-surface-border bg-white px-3 py-2 shadow-md text-xs">
+      <p className="text-content-secondary">{label ? formatTooltipTime(label) : ''}</p>
+      <p className="font-semibold text-content-primary">
         {payload[0].value.toFixed(2)}
-        {unit && <span className="ml-0.5 font-normal text-gray-500">{unit}</span>}
+        {unit && <span className="ml-0.5 font-normal text-content-secondary">{unit}</span>}
       </p>
     </div>
   )
@@ -118,9 +118,9 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
       : ['auto', 'auto']
 
   return (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white p-4 ring-1 ring-surface-border shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-700">{sensorLabel} グラフ</h3>
+        <h3 className="text-sm font-semibold text-content-secondary">{sensorLabel} グラフ</h3>
         <div className="flex gap-1">
           {PERIODS.map((p) => (
             <Button
@@ -128,7 +128,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
               variant={period === p.value ? 'default' : 'secondary'}
               size="sm"
               onClick={() => setPeriod(p.value)}
-              className={period === p.value ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              className={period === p.value ? 'bg-brand-default hover:bg-brand-default/90' : ''}
             >
               {p.label}
             </Button>
@@ -137,39 +137,39 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
       </div>
 
       {loading ? (
-        <div className="flex h-48 items-center justify-center text-sm text-gray-400">
+        <div className="flex h-48 items-center justify-center text-sm text-content-muted">
           読み込み中...
         </div>
       ) : fetchError ? (
-        <div className="flex h-48 items-center justify-center text-sm text-red-400">
+        <div className="flex h-48 items-center justify-center text-sm text-alert-text">
           {fetchError}
         </div>
       ) : data.length === 0 ? (
-        <div className="flex h-48 items-center justify-center text-sm text-gray-400">
+        <div className="flex h-48 items-center justify-center text-sm text-content-muted">
           データなし
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#eef1ed" />
             <XAxis
               dataKey="recorded_at"
               tickFormatter={(v) => formatTimestamp(v, period)}
-              tick={{ fontSize: 10, fill: '#9ca3af' }}
+              tick={{ fontSize: 10, fill: '#8a978f' }}
               tickLine={false}
               axisLine={false}
               minTickGap={40}
             />
             <YAxis
               domain={yDomain}
-              tick={{ fontSize: 10, fill: '#9ca3af' }}
+              tick={{ fontSize: 10, fill: '#8a978f' }}
               tickLine={false}
               axisLine={false}
               width={40}
             />
             <Tooltip
               content={<CustomTooltip unit={sensorUnit} />}
-              cursor={{ stroke: '#d1d5db', strokeWidth: 1 }}
+              cursor={{ stroke: '#e6e9e5', strokeWidth: 1 }}
             />
 
             {threshold !== null &&
@@ -178,15 +178,15 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
                 <ReferenceArea
                   y1={threshold.optimal_min}
                   y2={threshold.optimal_max}
-                  fill="#bbf7d0"
-                  fillOpacity={0.4}
+                  fill="#246e3a"
+                  fillOpacity={0.12}
                 />
               )}
 
             {threshold !== null && threshold.alert_min !== null && (
               <ReferenceLine
                 y={threshold.alert_min}
-                stroke="#ef4444"
+                stroke="#b9351f"
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />
@@ -194,7 +194,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
             {threshold !== null && threshold.alert_max !== null && (
               <ReferenceLine
                 y={threshold.alert_max}
-                stroke="#ef4444"
+                stroke="#b9351f"
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />
@@ -203,7 +203,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#3b82f6"
+              stroke="#246e3a"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
@@ -213,15 +213,15 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
       )}
 
       {summary && (
-        <div className="mt-3 flex gap-4 border-t pt-3 text-xs text-gray-500">
+        <div className="mt-3 flex gap-4 border-t border-surface-muted pt-3 text-xs text-content-secondary">
           <span>
-            最小: <span className="font-medium text-gray-700">{summary.min.toFixed(2)}{sensorUnit}</span>
+            最小: <span className="font-medium text-content-primary">{summary.min.toFixed(2)}{sensorUnit}</span>
           </span>
           <span>
-            最大: <span className="font-medium text-gray-700">{summary.max.toFixed(2)}{sensorUnit}</span>
+            最大: <span className="font-medium text-content-primary">{summary.max.toFixed(2)}{sensorUnit}</span>
           </span>
           <span>
-            平均: <span className="font-medium text-gray-700">{summary.avg.toFixed(2)}{sensorUnit}</span>
+            平均: <span className="font-medium text-content-primary">{summary.avg.toFixed(2)}{sensorUnit}</span>
           </span>
         </div>
       )}
