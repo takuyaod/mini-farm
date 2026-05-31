@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { AlertTriangle, ChevronLeft, Settings, Share2 } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { getZoneDetail } from '@/features/zones/api/getZoneDetail'
+import { APP_NAME, APP_VERSION } from '@/constants'
 import { ZoneInfoCard } from '@/features/zones/components/ZoneInfoCard'
 import { SensorSection } from '@/features/zones/components/SensorSection'
 import { DeviceStatus } from '@/features/zones/components/DeviceStatus'
@@ -121,7 +122,7 @@ export default async function ZoneDetailPage({
       {/* フッター */}
       <footer className="mx-auto max-w-[1400px] px-8 pb-8 pt-4">
         <div className="flex items-center gap-2 text-[11.5px] text-content-muted">
-          <span className="font-medium text-content-secondary">Mini Farm v0.1</span>
+          <span className="font-medium text-content-secondary">{APP_NAME} {APP_VERSION}</span>
           <span>·</span>
           <span>ESP32 telemetry</span>
           <span>/</span>
@@ -134,6 +135,7 @@ export default async function ZoneDetailPage({
                   day: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: 'Asia/Tokyo',
                 })
               : '—'}
           </span>
