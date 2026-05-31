@@ -20,17 +20,24 @@ export function SensorSection({ sensors, isOffline }: Props) {
 
   if (sensors.length === 0) {
     return (
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
-        <p className="text-sm text-gray-400">センサーなし</p>
+      <div className="rounded-xl bg-white p-4 ring-1 ring-[#e6e9e5] shadow-sm">
+        <p className="text-sm text-content-muted">センサーなし</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-gray-700">センサー現況</h3>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <div className="space-y-5">
+      {/* Sensor tiles */}
+      <div>
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="text-[14px] font-semibold text-content-primary">
+            センサー現況{' '}
+            <span className="tabular-nums text-content-secondary">({sensors.length})</span>
+          </h2>
+          <span className="text-[11px] text-content-muted">タイルをクリックでグラフを切替</span>
+        </div>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {sensors.map((sensor) => (
             <SensorTileDetail
               key={sensor.id}
@@ -43,12 +50,14 @@ export function SensorSection({ sensors, isOffline }: Props) {
         </div>
       </div>
 
+      {/* Chart */}
       {selectedSensor && (
         <SensorChart
           sensorId={selectedSensor.id}
           sensorLabel={selectedSensor.label ?? selectedSensor.sensor_type_masters.label}
           sensorUnit={selectedSensor.sensor_type_masters.unit ?? undefined}
           threshold={selectedSensor.threshold}
+          hasAlert={selectedSensor.hasAlert}
         />
       )}
     </div>

@@ -1,3 +1,6 @@
+'use client'
+
+import { LineChart } from 'lucide-react'
 import type { SensorWithAlert } from '../types'
 
 type Props = {
@@ -19,11 +22,14 @@ export function SensorTileDetail({ sensor, isOffline, isSelected, onClick }: Pro
   const unit = sensor_type_masters.unit
   const value = latestReading?.value
 
-  const inOptimalRange =
-    threshold && value !== undefined
-      ? (threshold.optimal_min === null || value >= threshold.optimal_min) &&
-        (threshold.optimal_max === null || value <= threshold.optimal_max)
-      : null
+  const isAlert = sensor.hasAlert
+  const isHigh = sensor.alertBreachDirection === 'high'
+  const isLow = sensor.alertBreachDirection === 'low'
+
+  const barMin =
+    threshold?.alert_min ?? threshold?.optimal_min ?? (value !== undefined ? value - 1 : 0)
+  const barMax =
+    threshold?.alert_max ?? threshold?.optimal_max ?? (value !== undefined ? value + 1 : 100)
 
   const showBar =
     threshold !== null &&
@@ -32,91 +38,130 @@ export function SensorTileDetail({ sensor, isOffline, isSelected, onClick }: Pro
       threshold.optimal_max !== null ||
       threshold.alert_max !== null)
 
-  const barMin =
-    threshold?.alert_min ?? threshold?.optimal_min ?? (value !== undefined ? value - 1 : 0)
-  const barMax =
-    threshold?.alert_max ?? threshold?.optimal_max ?? (value !== undefined ? value + 1 : 100)
+  const pct = (v: number) =>
+    Math.max(0, Math.min(100, ((v - barMin) / (barMax - barMin)) * 100))
 
-  const valuePercent =
-    value !== undefined && barMin !== undefined && barMax !== undefined
-      ? toPercent(value, barMin, barMax)
+  const optimalLeft =
+    threshold?.optimal_min != null ? pct(threshold.optimal_min) : null
+  const optimalWidth =
+    threshold?.optimal_min != null && threshold?.optimal_max != null
+      ? pct(threshold.optimal_max) - pct(threshold.optimal_min)
       : null
 
-  const alertLabel =
-    sensor.hasAlert
-      ? sensor.alertBreachDirection === 'high'
-        ? '上限超過'
-        : sensor.alertBreachDirection === 'low'
-          ? '下限割れ'
-          : 'アラート中'
-      : null
+  const valuePct = value !== undefined ? pct(value) : null
 
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-md border p-2 text-left transition-colors ${
-        sensor.hasAlert
-          ? 'border-red-300 bg-red-50'
+      className={`relative w-full rounded-xl p-4 text-left transition-all ${
+        isAlert
+          ? 'bg-[#fceeec] ring-1 ring-inset ring-[#f6d8d3] hover:ring-[#e9b5ad]'
           : isSelected
-            ? 'border-[1.5px] border-blue-400 bg-blue-50'
-            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+            ? 'bg-white shadow-sm ring-2 ring-[#1f6fd1]'
+            : 'bg-white ring-1 ring-inset ring-[#e6e9e5] hover:ring-[#cdd3cb]'
       }`}
     >
+      {/* Label row */}
       <div className="flex items-center justify-between gap-1">
         <span
-          className={`text-xs font-medium ${
-            sensor.hasAlert ? 'text-red-700' : 'text-gray-600'
+          className={`text-[11px] font-medium uppercase tracking-wider ${
+            isAlert ? 'text-[#b9351f]' : 'text-[#8a978f]'
           }`}
         >
           {label}
         </span>
         <div className="flex items-center gap-1">
-          {isOffline && <span className="text-xs text-gray-400">最終値</span>}
-          {isSelected && !sensor.hasAlert && (
-            <span className="text-xs font-medium text-blue-600">グラフ表示中</span>
+          {isOffline && <span className="text-[10px] text-content-muted">最終値</span>}
+          {isSelected && !isAlert && (
+            <span className="inline-flex items-center gap-1 rounded bg-[#1f6fd1] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
+              <LineChart className="h-2 w-2" strokeWidth={2.5} />
+              表示中
+            </span>
           )}
         </div>
       </div>
 
-      {alertLabel && (
-        <div className="text-xs font-medium text-red-600">{alertLabel}</div>
+      {/* Alert badge */}
+      {isHigh && (
+        <span className="mt-1 inline-block rounded bg-[#d6452c] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
+          ▲ 上限超過
+        </span>
+      )}
+      {isLow && (
+        <span className="mt-1 inline-block rounded bg-[#d6452c] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
+          ▼ 下限割れ
+        </span>
       )}
 
-      <div
-        className={`mt-0.5 text-base font-semibold tabular-nums ${
-          isOffline ? 'text-gray-400' : sensor.hasAlert ? 'text-red-700' : 'text-gray-900'
-        }`}
-      >
+      {/* Value */}
+      <div className="mt-1.5 flex items-baseline gap-1">
         {value !== undefined ? (
           <>
-            {value.toFixed(1)}
-            {unit && <span className="ml-0.5 text-xs font-normal text-gray-500">{unit}</span>}
+            <span
+              className={`text-[28px] font-semibold tracking-tight tabular-nums ${
+                isAlert ? 'text-[#b9351f]' : isOffline ? 'text-content-muted' : 'text-[#0f1a14]'
+              }`}
+            >
+              {value.toLocaleString('ja-JP', { maximumFractionDigits: 1 })}
+            </span>
+            {unit && (
+              <span
+                className={`text-[12px] font-medium ${isAlert ? 'text-[#b9351f]/80' : 'text-[#8a978f]'}`}
+              >
+                {unit}
+              </span>
+            )}
           </>
         ) : (
-          <span className="text-sm text-gray-400">—</span>
+          <span className="text-[28px] font-semibold text-content-muted">—</span>
         )}
       </div>
 
-      {showBar && valuePercent !== null && (
+      {/* Range bar */}
+      {showBar && valuePct !== null && (
         <>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="relative mt-2.5 h-[6px] rounded-full bg-[#f0d8d4]">
+            {/* Green optimal band */}
+            {optimalLeft !== null && optimalWidth !== null && (
+              <div
+                className="absolute top-0 h-full rounded-full bg-[#2f8a4a]"
+                style={{ left: `${optimalLeft}%`, width: `${optimalWidth}%` }}
+              />
+            )}
+            {/* Value marker (vertical bar) */}
             <div
-              className={`h-full w-1 rounded-full transition-all ${
-                inOptimalRange === false ? 'bg-red-500' : 'bg-green-500'
-              }`}
-              style={{ marginLeft: `calc(${valuePercent}% - 2px)` }}
-            />
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${valuePct}%` }}
+            >
+              <div
+                className={`h-3 w-[3px] rounded-sm ${isAlert ? 'bg-[#b9351f]' : 'bg-[#0f1a14]'}`}
+              />
+            </div>
           </div>
-          <div className="mt-0.5 flex justify-between text-[10px] text-gray-400">
-            <span>{threshold?.alert_min ?? ''}</span>
-            <span>
-              {threshold?.optimal_min ?? ''}
-              {threshold?.optimal_min !== null && threshold?.optimal_max !== null ? '–' : ''}
-              {threshold?.optimal_max ?? ''}
+
+          {/* Range hints */}
+          <div className="mt-1.5 flex justify-between font-mono text-[10px] tabular-nums">
+            <span className="text-[#b9351f]">
+              {threshold?.alert_min ?? ''}
+              <span className="ml-0.5 text-[#8a978f]">↓警</span>
             </span>
-            <span>{threshold?.alert_max ?? ''}</span>
+            <span className="text-[#246e3a]">
+              {threshold?.optimal_min ?? ''}
+              {threshold?.optimal_min != null && threshold?.optimal_max != null ? '–' : ''}
+              {threshold?.optimal_max ?? ''}
+              <span className="ml-0.5 text-[#8a978f]">適正</span>
+            </span>
+            <span className="text-[#b9351f]">
+              <span className="mr-0.5 text-[#8a978f]">警↑</span>
+              {threshold?.alert_max ?? ''}
+            </span>
           </div>
         </>
+      )}
+
+      {/* Blue bottom bar when selected */}
+      {isSelected && (
+        <span className="absolute inset-x-0 -bottom-px h-[3px] rounded-b-xl bg-[#1f6fd1]" />
       )}
     </button>
   )
