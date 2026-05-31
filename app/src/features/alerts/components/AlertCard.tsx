@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import type { AlertWithContext } from '../types'
 
 type Props = {
@@ -64,12 +63,11 @@ export function AlertCard({ alert, onResolve }: Props) {
     <div
       className="rounded-xl bg-white px-5 py-4"
       style={{
-        borderLeft: `4px solid ${borderColor}`,
-        opacity: isResolved ? 0.75 : 1,
-        boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
-        border: `1px solid #e6e9e5`,
+        border: '1px solid #e6e9e5',
         borderLeftColor: borderColor,
         borderLeftWidth: '4px',
+        opacity: isResolved ? 0.75 : 1,
+        boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -101,7 +99,7 @@ export function AlertCard({ alert, onResolve }: Props) {
           {/* 発報値・閾値バッジ */}
           <div className="flex flex-wrap gap-2">
             {alert.triggered_value !== null && (
-              <span className="inline-flex items-center rounded-full bg-[#eef1ed] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
+              <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
                 発報値:{' '}
                 <span className="ml-0.5 font-mono tabular-nums">
                   {alert.triggered_value}
@@ -110,7 +108,7 @@ export function AlertCard({ alert, onResolve }: Props) {
               </span>
             )}
             {alert.alertThresholdValue !== null && (
-              <span className="inline-flex items-center rounded-full bg-[#eef1ed] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
+              <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
                 {alert.breach_direction === 'high' ? '上限' : '下限'}:{' '}
                 <span className="ml-0.5 font-mono tabular-nums">
                   {alert.alertThresholdValue}
@@ -138,7 +136,7 @@ export function AlertCard({ alert, onResolve }: Props) {
             variant="outline"
             size="sm"
             onClick={() => onResolve(alert.id)}
-            className="shrink-0 border-[#e6e9e5] text-[#4b5a52] hover:border-[#cdd3cb] hover:bg-surface-muted hover:text-[#0f1a14]"
+            className="shrink-0 border-surface-border text-[#4b5a52] hover:border-[#cdd3cb] hover:bg-surface-muted hover:text-[#0f1a14]"
           >
             解消
           </Button>

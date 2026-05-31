@@ -164,15 +164,11 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
       {/* タブ */}
       <Tabs value={tab} onValueChange={(v) => handleTabChange(v as 'unresolved' | 'resolved')}>
         <TabsList
-          className="mb-4 gap-1 rounded-xl border-[#e6e9e5] bg-[#eef1ed] p-1"
-          style={{ boxShadow: 'none' }}
+          className="mb-4 gap-1 rounded-xl border-surface-border bg-surface-muted p-1 shadow-none"
         >
           <TabsTrigger
             value="unresolved"
             className="flex-1 gap-2 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-[#0f1a14] data-[state=inactive]:text-[#4b5a52] data-[state=inactive]:hover:text-[#0f1a14]"
-            style={{
-              boxShadow: undefined,
-            }}
           >
             未解消
             {unresolvedCount !== undefined && unresolvedCount > 0 && (
