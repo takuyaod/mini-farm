@@ -31,7 +31,7 @@ export function SensorSection({ sensors, isOffline }: Props) {
       {/* Sensor tiles */}
       <div>
         <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-[14px] font-semibold text-content-primary">
+          <h2 className="text-[14px] font-semibold tracking-tight text-content-primary">
             センサー現況{' '}
             <span className="tabular-nums text-content-secondary">({sensors.length})</span>
           </h2>

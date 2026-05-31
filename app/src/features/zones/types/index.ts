@@ -22,6 +22,7 @@ export type ZoneDetailData = {
   unresolvedAlerts: Alert[]
   currentPlant: ZonePlant | null
   isOffline: boolean
+  latestLastSeen: string | null
 }
 
 export type ChartPeriod = '24h' | '7d' | '30d'

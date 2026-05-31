@@ -18,7 +18,7 @@ export default async function ZoneDetailPage({
 
   if (!data) notFound()
 
-  const { zone, devices, sensors, unresolvedAlerts, currentPlant, isOffline } = data
+  const { zone, devices, sensors, unresolvedAlerts, currentPlant, isOffline, latestLastSeen } = data
 
   const totalUnresolvedAlerts = unresolvedAlerts.length
   const sensorIds = sensors.map((s) => s.id)
@@ -117,6 +117,28 @@ export default async function ZoneDetailPage({
           <DeviceStatus devices={devices} />
         </div>
       </main>
+
+      {/* フッター */}
+      <footer className="mx-auto max-w-[1400px] px-8 pb-8 pt-4">
+        <div className="flex items-center gap-2 text-[11.5px] text-content-muted">
+          <span className="font-medium text-content-secondary">Mini Farm v0.1</span>
+          <span>·</span>
+          <span>ESP32 telemetry</span>
+          <span>/</span>
+          <span>
+            最終同期{' '}
+            {latestLastSeen
+              ? new Date(latestLastSeen).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '—'}
+          </span>
+        </div>
+      </footer>
     </div>
   )
 }

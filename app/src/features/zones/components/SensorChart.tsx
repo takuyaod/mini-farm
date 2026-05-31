@@ -62,7 +62,7 @@ function CustomTooltip({ active, payload, label, unit }: CustomTooltipProps) {
     <div className="rounded-md border border-surface-border bg-white px-3 py-2 shadow-md text-xs">
       <p className="text-content-secondary">{label ? formatTooltipTime(label) : ''}</p>
       <p className="font-semibold text-content-primary">
-        {payload[0].value.toFixed(2)}
+        {payload[0].value.toLocaleString('ja-JP', { maximumFractionDigits: 1 })}
         {unit && <span className="ml-0.5 font-normal text-content-secondary">{unit}</span>}
       </p>
     </div>
@@ -206,7 +206,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold, hasA
         </div>
       ) : (
         <div className="px-2 pt-2">
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={320}>
             <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eef1ed" />
               <XAxis
@@ -286,7 +286,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold, hasA
                 <span
                   className={`text-[20px] font-semibold tracking-tight tabular-nums ${s.color}`}
                 >
-                  {s.value.toFixed(2)}
+                  {s.value.toLocaleString('ja-JP', { maximumFractionDigits: 1 })}
                 </span>
                 {sensorUnit && (
                   <span className="text-[11px] text-[#8a978f]">{sensorUnit}</span>

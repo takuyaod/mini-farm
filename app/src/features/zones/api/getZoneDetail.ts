@@ -111,5 +111,6 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
     unresolvedAlerts: allAlerts,
     currentPlant,
     isOffline,
+    latestLastSeen,
   }
 }
