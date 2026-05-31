@@ -51,60 +51,85 @@ function formatDuration(startedAt: string, resolvedAt: string): string {
 }
 
 const BORDER_COLOR: Record<string, string> = {
-  threshold_breach: '#E24B4A',
-  sensor_fault: '#EF9F27',
-}
-
-const BADGE_VARIANT: Record<string, 'red' | 'amber'> = {
-  threshold_breach: 'red',
-  sensor_fault: 'amber',
+  threshold_breach: '#d6452c',
+  sensor_fault: '#b1740a',
 }
 
 export function AlertCard({ alert, onResolve }: Props) {
   const isResolved = alert.resolved_at !== null
-  const borderColor = BORDER_COLOR[alert.alert_type] ?? '#E24B4A'
-  const badgeVariant = BADGE_VARIANT[alert.alert_type] ?? 'red'
+  const borderColor = BORDER_COLOR[alert.alert_type] ?? '#d6452c'
+  const isSensorFault = alert.alert_type === 'sensor_fault'
 
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-white p-4"
-      style={{ borderLeft: `4px solid ${borderColor}`, opacity: isResolved ? 0.7 : 1 }}
+      className="rounded-xl bg-white px-5 py-4"
+      style={{
+        borderLeft: `4px solid ${borderColor}`,
+        opacity: isResolved ? 0.75 : 1,
+        boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
+        border: `1px solid #e6e9e5`,
+        borderLeftColor: borderColor,
+        borderLeftWidth: '4px',
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
+          {/* バッジ行 */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant={badgeVariant}>{getBadgeLabel(alert)}</Badge>
+            {isSensorFault ? (
+              <span className="inline-flex items-center rounded bg-[#b1740a] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                {getBadgeLabel(alert)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded bg-[#d6452c] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                {getBadgeLabel(alert)}
+              </span>
+            )}
           </div>
 
-          <p className="text-sm font-medium text-gray-900">{getAlertTitle(alert)}</p>
+          {/* タイトル */}
+          <p className="text-[14px] font-medium leading-snug text-[#0f1a14]">
+            {getAlertTitle(alert)}
+          </p>
 
-          <p className="text-xs text-gray-500">
+          {/* ゾーン名・植物名 */}
+          <p className="text-[12.5px] text-[#4b5a52]">
             {alert.zoneName}
             {alert.plantName && <> · {alert.plantName}</>}
           </p>
 
+          {/* 発報値・閾値バッジ */}
           <div className="flex flex-wrap gap-2">
             {alert.triggered_value !== null && (
-              <Badge variant="secondary">
-                発報値: {alert.triggered_value}
-                {alert.unit ? ` ${alert.unit}` : ''}
-              </Badge>
+              <span className="inline-flex items-center rounded-full bg-[#eef1ed] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
+                発報値:{' '}
+                <span className="ml-0.5 font-mono tabular-nums">
+                  {alert.triggered_value}
+                  {alert.unit ? ` ${alert.unit}` : ''}
+                </span>
+              </span>
             )}
             {alert.alertThresholdValue !== null && (
-              <Badge variant="secondary">
-                {alert.breach_direction === 'high' ? '上限' : '下限'}: {alert.alertThresholdValue}
-                {alert.unit ? ` ${alert.unit}` : ''}
-              </Badge>
+              <span className="inline-flex items-center rounded-full bg-[#eef1ed] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
+                {alert.breach_direction === 'high' ? '上限' : '下限'}:{' '}
+                <span className="ml-0.5 font-mono tabular-nums">
+                  {alert.alertThresholdValue}
+                  {alert.unit ? ` ${alert.unit}` : ''}
+                </span>
+              </span>
             )}
           </div>
 
+          {/* 解消済み / 経過時間 */}
           {isResolved && alert.resolved_at ? (
-            <p className="text-xs font-medium text-green-600">
+            <p className="font-mono text-[11.5px] font-medium tabular-nums text-[#246e3a]">
               解消済み · {formatDate(alert.resolved_at)} · 継続{' '}
               {formatDuration(alert.started_at, alert.resolved_at)}
             </p>
           ) : (
-            <p className="text-xs text-gray-400">{formatElapsed(alert.started_at)}</p>
+            <p className="font-mono text-[11.5px] tabular-nums text-[#8a978f]">
+              {formatElapsed(alert.started_at)}
+            </p>
           )}
         </div>
 
@@ -113,6 +138,7 @@ export function AlertCard({ alert, onResolve }: Props) {
             variant="outline"
             size="sm"
             onClick={() => onResolve(alert.id)}
+            className="shrink-0 border-[#e6e9e5] text-[#4b5a52] hover:border-[#cdd3cb] hover:bg-surface-muted hover:text-[#0f1a14]"
           >
             解消
           </Button>
