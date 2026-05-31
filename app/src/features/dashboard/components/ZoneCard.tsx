@@ -37,32 +37,34 @@ export function ZoneCard({ data }: Props) {
       tabIndex={0}
       onClick={() => router.push(`/zones/${zone.id}`)}
       onKeyDown={(e) => e.key === 'Enter' && router.push(`/zones/${zone.id}`)}
-      className={`cursor-pointer rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md ${
-        alertCount > 0 ? 'border-l-[3px] border-l-red-500' : ''
+      className={`cursor-pointer rounded-xl bg-white ring-1 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#246e3a] ${
+        alertCount > 0
+          ? 'ring-[#f0b4b0] border-l-[3px] border-l-[#b9351f]'
+          : 'ring-[#e6e9e5]'
       }`}
     >
       <div className="p-4">
         {/* ヘッダー */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900">{zone.name}</h3>
+            <h3 className="font-semibold text-[#1a2e1a]">{zone.name}</h3>
             <Badge variant={zone.type === 'hydroponic' ? 'blue' : 'green'}>
               {zone.type === 'hydroponic' ? '水耕' : '土壌'}
             </Badge>
             {alertCount > 0 && (
-              <Badge variant="destructive">
+              <Badge variant="red" className="gap-0.5">
                 ⚠ {alertCount}件
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {isOffline && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 text-[#6b7a69]">
                 <WifiOff className="h-3 w-3" />
                 オフライン
               </Badge>
             )}
-            <span className="text-xs text-gray-400">{deviceCount}台</span>
+            <span className="text-xs text-[#8a978f]">{deviceCount}台</span>
           </div>
         </div>
 
@@ -74,7 +76,7 @@ export function ZoneCard({ data }: Props) {
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-gray-400">センサーなし</p>
+          <p className="mt-3 text-sm text-[#8a978f]">センサーなし</p>
         )}
 
         {/* アラート一覧 — クリックがカードナビゲーションに伝播しないよう止める */}
@@ -86,7 +88,7 @@ export function ZoneCard({ data }: Props) {
         </div>
 
         {/* フッター */}
-        <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+        <div className="mt-3 flex items-center justify-between border-t border-[#eef1ed] pt-2.5 text-xs text-[#6b7a69]">
           <span>{plantName}</span>
           <span>最終受信: {formatLastSeen(lastSeenAt)}</span>
         </div>

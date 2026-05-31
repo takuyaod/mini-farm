@@ -43,9 +43,9 @@ export function AlertList({ alerts, sensors }: Props) {
       {displayed.map((alert) => (
         <div
           key={alert.id}
-          className="flex items-center justify-between gap-2 rounded-md border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs"
+          className="flex items-center justify-between gap-2 rounded-md border border-[#f0b4b0] bg-[#fceeec] px-2.5 py-1.5 text-xs"
         >
-          <span className="text-red-800">
+          <span className="text-[#7a1f10]">
             {getSensorLabel(alert.sensor_id)} — {getAlertLabel(alert)}
           </span>
           <Button
@@ -57,14 +57,14 @@ export function AlertList({ alerts, sensors }: Props) {
                 await resolveAlert(alert.id)
               })
             }}
-            className="shrink-0 h-auto px-1.5 py-0.5 text-xs text-red-700 hover:bg-red-100"
+            className="shrink-0 h-auto px-1.5 py-0.5 text-xs text-[#b9351f] hover:bg-[#f5d0cc]"
           >
             解消
           </Button>
         </div>
       ))}
       {hasMore && (
-        <Link href="/alerts" className="block text-xs text-gray-500 hover:underline">
+        <Link href="/alerts" className="block text-xs text-[#6b7a69] hover:underline">
           すべて見る →
         </Link>
       )}
