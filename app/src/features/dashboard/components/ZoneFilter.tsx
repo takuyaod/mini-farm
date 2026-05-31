@@ -33,9 +33,8 @@ export function ZoneFilter({ zones }: Props) {
   })
 
   const showAddCard = activeTab === 'all'
-  const totalDisplayItems = filteredZones.length + (showAddCard ? 1 : 0)
-  const isSingleLayout = totalDisplayItems === 1
-  const hasContent = totalDisplayItems > 0
+  const isSingleLayout = filteredZones.length <= 1
+  const hasContent = filteredZones.length > 0 || showAddCard
 
   return (
     <div>
