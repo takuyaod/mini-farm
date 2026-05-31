@@ -12,7 +12,6 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from 'recharts'
-import { Button } from '@/components/ui/button'
 import { getSensorReadings } from '../api/getSensorReadings'
 import type { ChartDataPoint, ChartPeriod, PlantThreshold } from '../types'
 
@@ -21,12 +20,8 @@ type Props = {
   sensorLabel: string
   sensorUnit?: string
   threshold: PlantThreshold | null
+  hasAlert: boolean
 }
-
-// tailwind.config.ts の brand.default トークンに対応する色値
-const BRAND_DEFAULT_HEX = '#246e3a'
-// tailwind.config.ts の surface.muted トークンに対応する色値（最適範囲の背景用）
-const SURFACE_MUTED_HEX = '#eef1ed'
 
 const PERIODS: { value: ChartPeriod; label: string }[] = [
   { value: '24h', label: '24時間' },
@@ -84,7 +79,7 @@ function calcSummary(data: ChartDataPoint[]) {
   }
 }
 
-export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Props) {
+export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold, hasAlert }: Props) {
   const [period, setPeriod] = useState<ChartPeriod>('24h')
   const [data, setData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -113,6 +108,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
   }, [sensorId, period])
 
   const summary = calcSummary(data)
+  const lineColor = hasAlert ? '#b9351f' : '#246e3a'
 
   const yDomain: [number | 'auto', number | 'auto'] =
     threshold !== null && threshold.alert_min !== null && threshold.alert_max !== null
@@ -122,114 +118,184 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
         ]
       : ['auto', 'auto']
 
+  const showThresholdInfo =
+    threshold &&
+    (threshold.optimal_min !== null || threshold.optimal_max !== null)
+
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-surface-border shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-content-secondary">{sensorLabel} グラフ</h3>
-        <div className="flex gap-1">
+    <section className="rounded-xl bg-white ring-1 ring-[#e6e9e5] shadow-sm">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-4 px-6 pt-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-[18px] font-semibold tracking-tight">{sensorLabel} の推移</h2>
+            {hasAlert && (
+              <span className="inline-flex items-center rounded-full bg-[#fceeec] px-2 py-0.5 text-[11px] font-medium text-[#b9351f] ring-1 ring-inset ring-[#f6d8d3]">
+                アラート中
+              </span>
+            )}
+          </div>
+          {showThresholdInfo && (
+            <p className="mt-1 text-[12px] text-[#8a978f]">
+              適正範囲{' '}
+              <span className="font-mono tabular-nums text-[#246e3a]">
+                {threshold.optimal_min}–{threshold.optimal_max}
+                {sensorUnit ? ` ${sensorUnit}` : ''}
+              </span>
+              {(threshold.alert_min !== null || threshold.alert_max !== null) && (
+                <>
+                  {' · '}警告閾値{' '}
+                  <span className="font-mono tabular-nums text-[#b9351f]">
+                    {threshold.alert_min ?? '–'} / {threshold.alert_max ?? '–'}
+                  </span>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* Period selector */}
+        <div className="flex items-center gap-1 rounded-lg bg-[#f7f8f6] p-0.5 ring-1 ring-[#e6e9e5]">
           {PERIODS.map((p) => (
-            <Button
+            <button
               key={p.value}
-              variant={period === p.value ? 'default' : 'secondary'}
-              size="sm"
               onClick={() => setPeriod(p.value)}
-              className={period === p.value ? 'bg-brand-default hover:bg-brand-default/90' : ''}
+              className={`rounded-md px-3 py-1 text-[12px] font-medium transition-colors ${
+                period === p.value
+                  ? 'bg-white text-[#0f1a14] shadow-sm'
+                  : 'text-[#8a978f] hover:text-[#0f1a14]'
+              }`}
             >
               {p.label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="mt-3 flex items-center gap-4 px-6 text-[11px] text-[#4b5a52]">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-4 rounded-sm bg-[#2f8a4a]/30 ring-1 ring-[#2f8a4a]/40" />
+          適正範囲
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="block h-0 w-4 border-t-[1.5px] border-dashed border-[#d6452c]" />
+          警告閾値
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className="block h-0.5 w-4 rounded"
+            style={{ backgroundColor: lineColor }}
+          />
+          実測値
+        </span>
+      </div>
+
+      {/* Chart */}
       {loading ? (
-        <div className="flex h-48 items-center justify-center text-sm text-content-muted">
+        <div className="flex h-48 items-center justify-center px-6 py-4 text-sm text-content-muted">
           読み込み中...
         </div>
       ) : fetchError ? (
-        <div className="flex h-48 items-center justify-center text-sm text-alert-text">
+        <div className="flex h-48 items-center justify-center px-6 py-4 text-sm text-alert-text">
           {fetchError}
         </div>
       ) : data.length === 0 ? (
-        <div className="flex h-48 items-center justify-center text-sm text-content-muted">
+        <div className="flex h-48 items-center justify-center px-6 py-4 text-sm text-content-muted">
           データなし
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef1ed" />
-            <XAxis
-              dataKey="recorded_at"
-              tickFormatter={(v) => formatTimestamp(v, period)}
-              tick={{ fontSize: 10, fill: '#8a978f' }}
-              tickLine={false}
-              axisLine={false}
-              minTickGap={40}
-            />
-            <YAxis
-              domain={yDomain}
-              tick={{ fontSize: 10, fill: '#8a978f' }}
-              tickLine={false}
-              axisLine={false}
-              width={40}
-            />
-            <Tooltip
-              content={<CustomTooltip unit={sensorUnit} />}
-              cursor={{ stroke: '#e6e9e5', strokeWidth: 1 }}
-            />
+        <div className="px-2 pt-2">
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eef1ed" />
+              <XAxis
+                dataKey="recorded_at"
+                tickFormatter={(v) => formatTimestamp(v, period)}
+                tick={{ fontSize: 10, fill: '#8a978f' }}
+                tickLine={false}
+                axisLine={false}
+                minTickGap={40}
+              />
+              <YAxis
+                domain={yDomain}
+                tick={{ fontSize: 10, fill: '#8a978f' }}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+              />
+              <Tooltip
+                content={<CustomTooltip unit={sensorUnit} />}
+                cursor={{ stroke: '#e6e9e5', strokeWidth: 1 }}
+              />
 
-            {threshold !== null &&
-              threshold.optimal_min !== null &&
-              threshold.optimal_max !== null && (
-                <ReferenceArea
-                  y1={threshold.optimal_min}
-                  y2={threshold.optimal_max}
-                  fill={SURFACE_MUTED_HEX}
-                  fillOpacity={0.8}
+              {threshold !== null &&
+                threshold.optimal_min !== null &&
+                threshold.optimal_max !== null && (
+                  <ReferenceArea
+                    y1={threshold.optimal_min}
+                    y2={threshold.optimal_max}
+                    fill="#2f8a4a"
+                    fillOpacity={0.1}
+                  />
+                )}
+
+              {threshold !== null && threshold.alert_min !== null && (
+                <ReferenceLine
+                  y={threshold.alert_min}
+                  stroke="#d6452c"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.25}
+                />
+              )}
+              {threshold !== null && threshold.alert_max !== null && (
+                <ReferenceLine
+                  y={threshold.alert_max}
+                  stroke="#d6452c"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.25}
                 />
               )}
 
-            {threshold !== null && threshold.alert_min !== null && (
-              <ReferenceLine
-                y={threshold.alert_min}
-                stroke="#b9351f"
-                strokeDasharray="4 4"
-                strokeWidth={1}
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={lineColor}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: lineColor }}
               />
-            )}
-            {threshold !== null && threshold.alert_max !== null && (
-              <ReferenceLine
-                y={threshold.alert_max}
-                stroke="#b9351f"
-                strokeDasharray="4 4"
-                strokeWidth={1}
-              />
-            )}
-
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={BRAND_DEFAULT_HEX}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-
-      {summary && (
-        <div className="mt-3 flex gap-4 border-t border-surface-muted pt-3 text-xs text-content-secondary">
-          <span>
-            最小: <span className="font-medium text-content-primary">{summary.min.toFixed(2)}{sensorUnit}</span>
-          </span>
-          <span>
-            最大: <span className="font-medium text-content-primary">{summary.max.toFixed(2)}{sensorUnit}</span>
-          </span>
-          <span>
-            平均: <span className="font-medium text-content-primary">{summary.avg.toFixed(2)}{sensorUnit}</span>
-          </span>
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
-    </div>
+
+      {/* Summary grid */}
+      {summary && (
+        <div className="grid grid-cols-3 border-t border-[#eef1ed]">
+          {[
+            { label: '最小', value: summary.min, color: 'text-[#1f6fd1]' },
+            { label: '最大', value: summary.max, color: 'text-[#b9351f]' },
+            { label: '平均', value: summary.avg, color: 'text-[#0f1a14]' },
+          ].map((s, i) => (
+            <div key={i} className={`px-6 py-4 ${i > 0 ? 'border-l border-[#eef1ed]' : ''}`}>
+              <div className="text-[10px] font-medium uppercase tracking-wider text-[#8a978f]">
+                {s.label}
+              </div>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span
+                  className={`text-[20px] font-semibold tracking-tight tabular-nums ${s.color}`}
+                >
+                  {s.value.toFixed(2)}
+                </span>
+                {sensorUnit && (
+                  <span className="text-[11px] text-[#8a978f]">{sensorUnit}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
