@@ -27,9 +27,10 @@ export function AlertBanner({ zones }: Props) {
   const remaining = alertsWithZone.length - MAX_DISPLAY
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[#f0b4b0] bg-[#fceeec] px-4 py-3 text-sm">
-      <AlertTriangle className="h-4 w-4 shrink-0 text-[#b9351f]" />
-      <span className="flex-1 text-[#7a1f10]">
+    <div className="flex items-center gap-3 rounded-lg border border-alert-border bg-alert-bg px-4 py-3 text-sm">
+      <AlertTriangle className="h-4 w-4 shrink-0 text-alert-text" />
+      {/* 本文は alert-text-strong（より暗いトーン）でアイコン・リンクより可読性を高める */}
+      <span className="flex-1 text-alert-text-strong">
         {displayed.map((a, i) => (
           <span key={a.id}>
             {i > 0 && '、'}
@@ -38,7 +39,7 @@ export function AlertBanner({ zones }: Props) {
         ))}
         {remaining > 0 && <span>、他 {remaining}件</span>}
       </span>
-      <Link href="/alerts" className="shrink-0 font-medium text-[#b9351f] hover:underline">
+      <Link href="/alerts" className="shrink-0 font-medium text-alert-text hover:underline">
         確認する →
       </Link>
     </div>
