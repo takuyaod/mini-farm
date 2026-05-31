@@ -45,5 +45,11 @@ secret = "env(GITHUB_CLIENT_SECRET)"
 [edge_runtime]
 enabled = true
 
+[functions.readings]
+verify_jwt = false
+
+[functions.readings-batch]
+verify_jwt = false
+
 [analytics]
 enabled = false
