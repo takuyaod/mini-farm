@@ -1,6 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-
-const SUPABASE_AUTH_STORAGE_KEY = 'mini-farm-auth-token'
+import { SUPABASE_AUTH_STORAGE_KEY } from './constants'
 
 export function createClient() {
   return createBrowserClient(
