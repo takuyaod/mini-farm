@@ -175,6 +175,7 @@ function DeviceRow({ device, zoneId }: DeviceRowProps) {
           </Button>
           <form action={formAction}>
             <input type="hidden" name="device_id" value={device.id} />
+            <input type="hidden" name="zone_id" value={zoneId} />
             <Button
               type="submit"
               variant="outline"
@@ -187,8 +188,8 @@ function DeviceRow({ device, zoneId }: DeviceRowProps) {
           </form>
         </div>
       )}
-      {state.error && <p className="text-xs text-red-500">{state.error}</p>}
-      {state.success && state.apiKey && (
+      {!isEditingName && state.error && <p className="text-xs text-red-500">{state.error}</p>}
+      {!isEditingName && state.success && state.apiKey && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
           <p className="mb-1 text-xs text-amber-700">
             ⚠ APIキーは一度しか表示されません。必ずコピーして保存してください。

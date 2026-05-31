@@ -16,7 +16,11 @@ export async function reissueApiKey(
   const user = await getUser()
   if (!user) return { success: false, error: '認証が必要です' }
 
-  const deviceId = formData.get('device_id') as string
+  const deviceId = formData.get('device_id') as string | null
+  const zoneId = formData.get('zone_id') as string | null
+
+  if (!deviceId) return { success: false, error: '無効なリクエストです' }
+  if (!zoneId) return { success: false, error: '無効なリクエストです' }
 
   const { rawKey, apiKeyHash } = await generateApiKey()
 
@@ -26,6 +30,7 @@ export async function reissueApiKey(
     .from('devices')
     .update({ api_key_hash: apiKeyHash })
     .eq('id', deviceId)
+    .eq('zone_id', zoneId)
 
   if (error) return { success: false, error: 'APIキーの再発行に失敗しました' }
 
