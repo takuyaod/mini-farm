@@ -1,8 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
@@ -50,12 +49,6 @@ export function UserMenu({ user }: Props) {
             <p className="truncate text-xs text-gray-500">{user.email}</p>
           </DropdownMenuLabel>
         )}
-        <DropdownMenuItem asChild>
-          <Link href="/settings/plants" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            植物マスタ管理
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="h-4 w-4" />
