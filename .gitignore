@@ -14,6 +14,7 @@ npm-debug.log*
 app/.next/
 app/out/
 app/tsconfig.tsbuildinfo
+app/next-env.d.ts
 
 # Supabase CLI
 supabase/.branches/
