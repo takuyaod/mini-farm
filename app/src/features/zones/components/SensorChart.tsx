@@ -23,6 +23,11 @@ type Props = {
   threshold: PlantThreshold | null
 }
 
+// tailwind.config.ts の brand.default トークンに対応する色値
+const BRAND_DEFAULT_HEX = '#246e3a'
+// tailwind.config.ts の surface.muted トークンに対応する色値（最適範囲の背景用）
+const SURFACE_MUTED_HEX = '#eef1ed'
+
 const PERIODS: { value: ChartPeriod; label: string }[] = [
   { value: '24h', label: '24時間' },
   { value: '7d', label: '7日' },
@@ -178,8 +183,8 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
                 <ReferenceArea
                   y1={threshold.optimal_min}
                   y2={threshold.optimal_max}
-                  fill="#246e3a"
-                  fillOpacity={0.12}
+                  fill={SURFACE_MUTED_HEX}
+                  fillOpacity={0.8}
                 />
               )}
 
@@ -203,7 +208,7 @@ export function SensorChart({ sensorId, sensorLabel, sensorUnit, threshold }: Pr
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#246e3a"
+              stroke={BRAND_DEFAULT_HEX}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}

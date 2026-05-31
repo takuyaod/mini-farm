@@ -99,7 +99,7 @@ export function SensorTileDetail({ sensor, isOffline, isSelected, onClick }: Pro
 
       {showBar && valuePercent !== null && (
         <>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-alert-hover">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
             <div
               className={`h-full w-1 rounded-full transition-all ${
                 inOptimalRange === false ? 'bg-alert-text' : 'bg-brand-default'
