@@ -1,11 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const SUPABASE_AUTH_STORAGE_KEY = 'mini-farm-auth-token'
-
-type ResponseCookiesStore = ReturnType<typeof NextResponse.next>['cookies']
-type CookieSetOptions = Parameters<ResponseCookiesStore['set']>[2]
-type CookieToSet = { name: string; value: string; options?: CookieSetOptions }
+import { SUPABASE_AUTH_STORAGE_KEY, type CookieToSet } from '@/lib/supabase/constants'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

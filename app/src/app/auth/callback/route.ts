@@ -2,11 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-
-const SUPABASE_AUTH_STORAGE_KEY = 'mini-farm-auth-token'
-type CookieStore = Awaited<ReturnType<typeof cookies>>
-type CookieSetOptions = Parameters<CookieStore['set']>[2]
-type CookieToSet = { name: string; value: string; options?: CookieSetOptions }
+import { SUPABASE_AUTH_STORAGE_KEY, type CookieToSet } from '@/lib/supabase/constants'
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)

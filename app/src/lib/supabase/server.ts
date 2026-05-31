@@ -1,11 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-
-const SUPABASE_AUTH_STORAGE_KEY = 'mini-farm-auth-token'
-
-type CookieStore = Awaited<ReturnType<typeof cookies>>
-type CookieSetOptions = Parameters<CookieStore['set']>[2]
-type CookieToSet = { name: string; value: string; options?: CookieSetOptions }
+import { SUPABASE_AUTH_STORAGE_KEY, type CookieToSet } from './constants'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -35,10 +30,7 @@ export async function createClient() {
   )
 }
 
-/**
- * OAuth 開始URLの生成専用。
- * ブラウザが遷移するURLは公開到達可能な Supabase URL を使う必要がある。
- */
+/** OAuth 開始URL生成専用。ブラウザが遷移するURLには公開到達可能な Supabase URL を使う。 */
 export async function createAuthClient() {
   const cookieStore = await cookies()
 
