@@ -7,7 +7,7 @@ const navItems = [
   { label: 'ダッシュボード', href: '/' },
   { label: 'ゾーン', href: '/zones' },
   { label: 'アラート', href: '/alerts' },
-  { label: '設定', href: '/settings/plants' },
+  { label: '植物マスタ', href: '/settings/plants' },
 ]
 
 export function HeaderNav() {
