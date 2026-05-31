@@ -6,7 +6,7 @@ import { Header } from '@/components/Header'
 import { createClient, getClaims } from '@/lib/supabase/server'
 import { ZoneSettingsName } from '@/features/zones/components/ZoneSettingsName'
 import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant'
-import { AddDeviceForm, ReissueApiKeySection } from '@/features/zones/components/ZoneSettingsDevice'
+import { DeviceManagementSection } from '@/features/zones/components/ZoneSettingsDevice'
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
 import type { Device, Plant, Sensor } from '@/features/dashboard/types'
 
@@ -94,16 +94,9 @@ export default async function ZoneSettingsPage({
           )}
 
           <section className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-medium text-gray-800">デバイスを追加</h2>
-            <AddDeviceForm zoneId={id} />
+            <h2 className="mb-4 text-base font-medium text-gray-800">デバイス管理</h2>
+            <DeviceManagementSection devices={devices} zoneId={id} />
           </section>
-
-          {devices.length > 0 && (
-            <section className="rounded-xl bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-base font-medium text-gray-800">APIキー再発行</h2>
-              <ReissueApiKeySection devices={devices} zoneId={id} />
-            </section>
-          )}
 
           {allActiveSensors.length > 0 && (
             <section className="rounded-xl bg-white p-6 shadow-sm">

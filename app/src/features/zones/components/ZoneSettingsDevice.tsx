@@ -17,7 +17,7 @@ type AddDeviceFormProps = {
 
 const initialAddState: AddDeviceState = { success: false }
 
-export function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
+function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const [state, formAction, isPending] = useActionState(addDevice, initialAddState)
 
@@ -137,60 +137,59 @@ function EditDeviceNameForm({ device, zoneId, onCancel }: EditDeviceNameFormProp
   )
 }
 
-// ---- Reissue API Key Form (per device) ----
+// ---- Device Row (name edit + API key reissue) ----
 
-type ReissueFormProps = {
+type DeviceRowProps = {
   device: Device
   zoneId: string
 }
 
 const initialReissueState: ReissueApiKeyState = { success: false }
 
-function ReissueApiKeyForm({ device, zoneId }: ReissueFormProps) {
+function DeviceRow({ device, zoneId }: DeviceRowProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const [state, formAction, isPending] = useActionState(reissueApiKey, initialReissueState)
 
-  if (isEditingName) {
-    return (
-      <EditDeviceNameForm
-        device={device}
-        zoneId={zoneId}
-        onCancel={() => setIsEditingName(false)}
-      />
-    )
-  }
-
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3">
-        <span className="flex-1 text-sm text-gray-700">
-          {device.name ?? `デバイス (${device.id.slice(0, 8)}...)`}
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditingName(true)}
-          aria-label="デバイス名を編集"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          編集
-        </Button>
-        <form action={formAction}>
-          <input type="hidden" name="device_id" value={device.id} />
+      {isEditingName ? (
+        <EditDeviceNameForm
+          device={device}
+          zoneId={zoneId}
+          onCancel={() => setIsEditingName(false)}
+        />
+      ) : (
+        <div className="flex items-center gap-3">
+          <span className="flex-1 text-sm text-gray-700">
+            {device.name ?? `デバイス (${device.id.slice(0, 8)}...)`}
+          </span>
           <Button
-            type="submit"
+            type="button"
             variant="outline"
             size="sm"
-            disabled={isPending}
+            onClick={() => setIsEditingName(true)}
+            aria-label="デバイス名を編集"
           >
-            <Key className="h-3.5 w-3.5" />
-            {isPending ? '発行中...' : '再発行'}
+            <Pencil className="h-3.5 w-3.5" />
+            編集
           </Button>
-        </form>
-      </div>
-      {state.error && <p className="text-xs text-red-500">{state.error}</p>}
-      {state.success && state.apiKey && (
+          <form action={formAction}>
+            <input type="hidden" name="device_id" value={device.id} />
+            <input type="hidden" name="zone_id" value={zoneId} />
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+            >
+              <Key className="h-3.5 w-3.5" />
+              {isPending ? '発行中...' : 'APIキー再発行'}
+            </Button>
+          </form>
+        </div>
+      )}
+      {!isEditingName && state.error && <p className="text-xs text-red-500">{state.error}</p>}
+      {!isEditingName && state.success && state.apiKey && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
           <p className="mb-1 text-xs text-amber-700">
             ⚠ APIキーは一度しか表示されません。必ずコピーして保存してください。
@@ -204,25 +203,33 @@ function ReissueApiKeyForm({ device, zoneId }: ReissueFormProps) {
   )
 }
 
-// ---- Reissue Section ----
+// ---- Device Management Section ----
 
-type ReissueApiKeySectionProps = {
+type DeviceManagementSectionProps = {
   devices: Device[]
   zoneId: string
 }
 
-export function ReissueApiKeySection({ devices, zoneId }: ReissueApiKeySectionProps) {
-  if (devices.length === 0) {
-    return <p className="text-sm text-gray-500">デバイスがありません</p>
-  }
-
+export function DeviceManagementSection({ devices, zoneId }: DeviceManagementSectionProps) {
   return (
-    <div className="divide-y divide-gray-100">
-      {devices.map((device) => (
-        <div key={device.id} className="py-3 first:pt-0 last:pb-0">
-          <ReissueApiKeyForm device={device} zoneId={zoneId} />
+    <div className="space-y-6">
+      <div>
+        <h3 className="mb-3 text-sm font-medium text-gray-700">デバイスを追加</h3>
+        <AddDeviceForm zoneId={zoneId} />
+      </div>
+
+      {devices.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-gray-700">登録済みデバイス</h3>
+          <div className="divide-y divide-gray-100">
+            {devices.map((device) => (
+              <div key={device.id} className="py-3 first:pt-0 last:pb-0">
+                <DeviceRow device={device} zoneId={zoneId} />
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+      )}
     </div>
   )
 }
