@@ -63,7 +63,7 @@ export function ZoneFilter({ zones }: Props) {
       {/* ゾーングリッド */}
       {hasContent ? (
         <div
-          className={isSingleLayout ? 'flex flex-col' : 'grid gap-4'}
+          className={isSingleLayout ? 'flex flex-col gap-4' : 'grid gap-4'}
           style={
             !isSingleLayout
               ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
