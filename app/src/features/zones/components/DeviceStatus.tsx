@@ -38,7 +38,7 @@ export function DeviceStatus({ devices }: Props) {
 
   return (
     <section className="rounded-xl bg-white ring-1 ring-[#e6e9e5] shadow-sm">
-      <div className="flex items-center justify-between px-6 pt-5 pb-3">
+      <div className="flex items-center justify-between px-6 pt-5">
         <h2 className="text-[15px] font-semibold tracking-tight text-content-primary">
           デバイス{' '}
           <span className="tabular-nums text-content-secondary">({devices.length})</span>
