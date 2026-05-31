@@ -33,7 +33,8 @@ export function ZoneFilter({ zones }: Props) {
   })
 
   const showAddCard = activeTab === 'all'
-  const gridItemCount = filteredZones.length + (showAddCard ? 1 : 0)
+  const isSingleLayout = filteredZones.length === 1
+  const hasContent = filteredZones.length > 0 || showAddCard
 
   return (
     <div>
@@ -60,11 +61,11 @@ export function ZoneFilter({ zones }: Props) {
       </div>
 
       {/* ゾーングリッド */}
-      {gridItemCount > 0 ? (
+      {hasContent ? (
         <div
-          className={gridItemCount === 1 ? 'flex flex-col' : 'grid gap-4'}
+          className={isSingleLayout ? 'flex flex-col' : 'grid gap-4'}
           style={
-            gridItemCount > 1
+            !isSingleLayout
               ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
               : undefined
           }
