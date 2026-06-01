@@ -1,13 +1,50 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { Key, Pencil, Plus, X } from 'lucide-react'
+import { Check, Copy, Key, Pencil, Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { addDevice, type AddDeviceState } from '../api/addDevice'
 import { reissueApiKey, type ReissueApiKeyState } from '../api/reissueApiKey'
 import { updateDeviceName, type UpdateDeviceNameState } from '../api/updateDeviceName'
 import type { Device } from '@/features/dashboard/types'
+
+// ---- API Key Copy Button ----
+
+function ApiKeyCopyButton({ apiKey }: { apiKey: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(apiKey)
+    setCopied(true)
+    toast.success('APIキーをコピーしました')
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      className="mt-2 text-amber-800 border-amber-300 hover:bg-amber-100"
+      aria-label="APIキーをコピー"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3.5 w-3.5" />
+          コピー済み
+        </>
+      ) : (
+        <>
+          <Copy className="h-3.5 w-3.5" />
+          コピー
+        </>
+      )}
+    </Button>
+  )
+}
 
 // ---- Add Device Form ----
 
@@ -62,6 +99,7 @@ function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
           <code className="block break-all rounded bg-amber-100 px-3 py-2 font-mono text-xs text-amber-900">
             {state.apiKey}
           </code>
+          <ApiKeyCopyButton apiKey={state.apiKey} />
         </div>
       )}
     </div>
@@ -197,6 +235,7 @@ function DeviceRow({ device, zoneId }: DeviceRowProps) {
           <code className="block break-all rounded bg-amber-100 px-2 py-1.5 font-mono text-xs text-amber-900">
             {state.apiKey}
           </code>
+          <ApiKeyCopyButton apiKey={state.apiKey} />
         </div>
       )}
     </div>

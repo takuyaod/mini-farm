@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 import { RealtimeContextProvider } from '@/components/RealtimeContext'
 import './globals.css'
 
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${inter.className} ${jetbrainsMono.variable}`}>
         <RealtimeContextProvider>{children}</RealtimeContextProvider>
+        <Toaster richColors />
       </body>
     </html>
   )
