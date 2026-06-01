@@ -27,7 +27,7 @@ export async function upsertThresholds(
 
   if (plantError) {
     console.error('[upsertThresholds] plant fetch error:', plantError)
-    return { success: false, error: `植物の取得に失敗しました: ${plantError.message}` }
+    return { success: false, error: '植物の取得に失敗しました' }
   }
   if (!plant) return { success: false, error: '植物が見つかりません' }
   if (plant.created_by === null) return { success: false, error: 'システム植物の閾値は編集できません' }
