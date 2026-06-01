@@ -113,9 +113,16 @@ CREATE TABLE zones (
     user_id    UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     name       VARCHAR(100) NOT NULL,
     type       cultivation_type NOT NULL,  -- 'both' は使用しない
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    is_active  BOOLEAN NOT NULL DEFAULT true  -- false = 休止中（sensors.is_active と同じパターン）
 );
 ```
+
+> **ゾーンの休止（非アクティブ化）**  
+> `devices` / `zone_plants` が `ON DELETE RESTRICT` で参照しているためゾーンの物理削除は不可。  
+> `is_active = false` に設定することで論理的に休止状態にし、ダッシュボードから非表示にする。  
+> 非アクティブゾーンのデバイスから Edge Function にデータが送信された場合は 403 を返す。  
+> `/zones` ページから `is_active = true` に戻すことで再開できる。
 
 ---
 

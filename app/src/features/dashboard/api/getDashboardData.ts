@@ -21,6 +21,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const { data: zones, error: zonesError } = await supabase
     .from('zones')
     .select('*')
+    .eq('is_active', true)
     .order('created_at', { ascending: true })
 
   if (zonesError || !zones || zones.length === 0) {

@@ -84,6 +84,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Unauthorized" }, 401)
   }
 
+  // ゾーンの is_active チェック（非アクティブゾーンからのデータ送信を拒否）
+  const { data: zone } = await supabase
+    .from("zones")
+    .select("is_active")
+    .eq("id", device.zone_id)
+    .maybeSingle()
+
+  if (!zone) {
+    return jsonResponse({ error: "Zone not found" }, 404)
+  }
+
+  if (!zone.is_active) {
+    return jsonResponse({ error: "Zone is inactive" }, 403)
+  }
+
   // 2. バリデーション
   let body: RequestBody
   try {
