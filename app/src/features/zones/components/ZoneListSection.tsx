@@ -73,12 +73,8 @@ export function ZoneListSection({ activeZones, inactiveZones }: Props) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-surface-border bg-white py-12 text-center">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-surface-border bg-white py-12 text-center">
             <p className="text-sm text-content-muted">ゾーンがありません</p>
-            <Button variant="green" size="sm" onClick={() => setModalOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              ゾーンを追加
-            </Button>
           </div>
         )}
       </section>
