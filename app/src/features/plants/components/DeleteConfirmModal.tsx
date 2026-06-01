@@ -5,6 +5,7 @@ import { AlertTriangle, X } from 'lucide-react'
 import { deletePlant } from '../api/deletePlant'
 import type { DeletePlantState } from '../api/deletePlant'
 import type { Plant } from '../types'
+import '../styles/modal-animations.css'
 
 const initialState: DeletePlantState = { success: false }
 
@@ -115,17 +116,6 @@ export function DeleteConfirmModal({ plant, onClose }: DeleteConfirmModalProps) 
           </button>
         </form>
       </div>
-
-      <style>{`
-        @keyframes overlayIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
     </div>
   )
 }

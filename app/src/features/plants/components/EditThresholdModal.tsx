@@ -5,27 +5,12 @@ import { ChevronDown, Leaf, Plus, Trash2, X } from 'lucide-react'
 import { upsertThresholds } from '../api/upsertThresholds'
 import type { UpsertThresholdsState } from '../api/upsertThresholds'
 import { ThresholdScale } from './ThresholdScale'
+import { CultivationBadge } from './CultivationBadge'
+import { filterSensorsByCultivation } from '../utils/filterSensorsByCultivation'
 import type { Plant, PlantThreshold, SensorTypeMaster } from '../types'
+import '../styles/modal-animations.css'
 
 const initialState: UpsertThresholdsState = { success: false }
-
-type CultivationBadgeProps = {
-  type: Plant['cultivation_type']
-}
-
-function CultivationBadge({ type }: CultivationBadgeProps) {
-  const config = {
-    hydroponic: { label: '水耕', className: 'bg-[#eaf2fb] text-[#1f6fd1]' },
-    soil: { label: '土壌', className: 'bg-[#ecf5ee] text-[#246e3a]' },
-    both: { label: '両対応', className: 'bg-[#f2edfb] text-[#6d3fc4]' },
-  }
-  const { label, className } = config[type]
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
-      {label}
-    </span>
-  )
-}
 
 type ThresholdRowState = {
   id: string
@@ -85,15 +70,11 @@ export function EditThresholdModal({
 
   const [rows, setRows] = useState<ThresholdRowState[]>([])
   const [addDropdownOpen, setAddDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (plant) {
-      const relevantSensorTypes = sensorTypes.filter(
-        (st) =>
-          st.cultivation_type === plant.cultivation_type ||
-          st.cultivation_type === 'both' ||
-          plant.cultivation_type === 'both'
-      )
+      const relevantSensorTypes = filterSensorsByCultivation(sensorTypes, plant.cultivation_type)
       const existingRows = relevantSensorTypes
         .map((st) => {
           const t = thresholds.find((th) => th.sensor_type_id === st.id)
@@ -138,14 +119,21 @@ export function EditThresholdModal({
     }
   }, [plant])
 
+  // 外部クリックでドロップダウンを閉じる
+  useEffect(() => {
+    if (!addDropdownOpen) return
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setAddDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [addDropdownOpen])
+
   if (!plant) return null
 
-  const relevantSensorTypes = sensorTypes.filter(
-    (st) =>
-      st.cultivation_type === plant.cultivation_type ||
-      st.cultivation_type === 'both' ||
-      plant.cultivation_type === 'both'
-  )
+  const relevantSensorTypes = filterSensorsByCultivation(sensorTypes, plant.cultivation_type)
 
   const usedIds = new Set(rows.map((r) => r.sensorTypeId))
   const availableSensorTypes = relevantSensorTypes.filter((st) => !usedIds.has(st.id))
@@ -330,7 +318,7 @@ export function EditThresholdModal({
 
           {/* センサー追加ドロップダウン */}
           {availableSensorTypes.length > 0 && (
-            <div className="relative mt-4">
+            <div className="relative mt-4" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setAddDropdownOpen((prev) => !prev)}
@@ -392,17 +380,6 @@ export function EditThresholdModal({
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes overlayIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
     </div>
   )
 }

@@ -2,36 +2,9 @@
 
 import { Leaf, Pencil, Trash2 } from 'lucide-react'
 import { ThresholdScale } from './ThresholdScale'
+import { CultivationBadge } from './CultivationBadge'
+import { filterSensorsByCultivation } from '../utils/filterSensorsByCultivation'
 import type { Plant, PlantThreshold, SensorTypeMaster } from '../types'
-
-type CultivationBadgeProps = {
-  type: Plant['cultivation_type']
-}
-
-function CultivationBadge({ type }: CultivationBadgeProps) {
-  const config = {
-    hydroponic: {
-      label: '水耕',
-      className: 'bg-[#eaf2fb] text-[#1f6fd1]',
-    },
-    soil: {
-      label: '土壌',
-      className: 'bg-[#ecf5ee] text-[#246e3a]',
-    },
-    both: {
-      label: '両対応',
-      className: 'bg-[#f2edfb] text-[#6d3fc4]',
-    },
-  }
-  const { label, className } = config[type]
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}
-    >
-      {label}
-    </span>
-  )
-}
 
 type PlantCardProps = {
   plant: Plant
@@ -48,12 +21,7 @@ export function PlantCard({
   onEditThreshold,
   onDelete,
 }: PlantCardProps) {
-  const relevantSensorTypes = sensorTypes.filter(
-    (st) =>
-      st.cultivation_type === plant.cultivation_type ||
-      st.cultivation_type === 'both' ||
-      plant.cultivation_type === 'both'
-  )
+  const relevantSensorTypes = filterSensorsByCultivation(sensorTypes, plant.cultivation_type)
 
   const thresholdsWithSensor = relevantSensorTypes
     .map((st) => ({

@@ -5,6 +5,8 @@ import { ChevronDown, Plus, Trash2, X } from 'lucide-react'
 import { createPlant } from '../api/createPlant'
 import type { CreatePlantState } from '../api/createPlant'
 import type { CultivationType, SensorTypeMaster } from '../types'
+import { filterSensorsByCultivation } from '../utils/filterSensorsByCultivation'
+import '../styles/modal-animations.css'
 
 const initialState: CreatePlantState = { success: false }
 
@@ -29,6 +31,39 @@ type AddPlantModalProps = {
   sensorTypes: SensorTypeMaster[]
 }
 
+function parseNum(s: string): number | null {
+  if (s.trim() === '') return null
+  const n = parseFloat(s)
+  return isNaN(n) ? null : n
+}
+
+function isRowInvalid(row: ThresholdRow): boolean {
+  const alertMin = parseNum(row.alertMin)
+  const optimalMin = parseNum(row.optimalMin)
+  const optimalMax = parseNum(row.optimalMax)
+  const alertMax = parseNum(row.alertMax)
+
+  const vals = [alertMin, optimalMin, optimalMax, alertMax]
+  const defined = vals.filter((v) => v !== null) as number[]
+  if (defined.length < 2) return false
+
+  const allDefined =
+    alertMin !== null && optimalMin !== null && optimalMax !== null && alertMax !== null
+  if (allDefined) {
+    return !(
+      alertMin! <= optimalMin! &&
+      optimalMin! <= optimalMax! &&
+      optimalMax! <= alertMax!
+    )
+  }
+
+  if (optimalMin !== null && optimalMax !== null && optimalMin > optimalMax) return true
+  if (alertMin !== null && optimalMin !== null && alertMin > optimalMin) return true
+  if (optimalMax !== null && alertMax !== null && optimalMax > alertMax) return true
+
+  return false
+}
+
 export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps) {
   const [state, formAction, isPending] = useActionState(createPlant, initialState)
   const onCloseRef = useRef(onClose)
@@ -42,6 +77,7 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
   const [thresholdRows, setThresholdRows] = useState<ThresholdRow[]>([])
   const [addDropdownOpen, setAddDropdownOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (state.success) {
@@ -73,6 +109,18 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
     }
   }, [open])
 
+  // 外部クリックでドロップダウンを閉じる
+  useEffect(() => {
+    if (!addDropdownOpen) return
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setAddDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [addDropdownOpen])
+
   function resetForm() {
     setNameValue('')
     setNameTouched(false)
@@ -88,12 +136,7 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
     }
   }
 
-  const filteredSensorTypes = sensorTypes.filter(
-    (st) =>
-      st.cultivation_type === cultivationType ||
-      st.cultivation_type === 'both' ||
-      cultivationType === 'both'
-  )
+  const filteredSensorTypes = filterSensorsByCultivation(sensorTypes, cultivationType)
 
   const usedSensorTypeIds = new Set(thresholdRows.map((r) => r.sensorTypeId))
   const availableSensorTypes = filteredSensorTypes.filter(
@@ -126,6 +169,7 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
   }
 
   const nameError = nameTouched && nameValue.trim() === ''
+  const hasInvalid = thresholdRows.some(isRowInvalid)
 
   if (!open) return null
 
@@ -244,45 +288,56 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
                 {thresholdRows.map((row) => {
                   const st = sensorTypes.find((s) => s.id === row.sensorTypeId)
                   if (!st) return null
+                  const invalid = isRowInvalid(row)
                   return (
-                    <div
-                      key={row.id}
-                      className="grid grid-cols-[1fr_repeat(4,80px)_32px] items-center gap-2 rounded-lg border border-[#eef1ed] bg-[#f7f8f6] px-3 py-2"
-                    >
+                    <div key={row.id} className="flex flex-col gap-1.5">
                       <input type="hidden" name="sensor_type_id" value={st.id} />
-                      <span className="text-sm text-[#0f1a14]">
-                        {st.label}
-                        {st.unit && (
-                          <span className="ml-1 text-xs text-[#8a978f]">({st.unit})</span>
-                        )}
-                      </span>
-                      {(
-                        [
-                          { field: 'alertMin' as const, name: `alert_min_${st.id}` },
-                          { field: 'optimalMin' as const, name: `optimal_min_${st.id}` },
-                          { field: 'optimalMax' as const, name: `optimal_max_${st.id}` },
-                          { field: 'alertMax' as const, name: `alert_max_${st.id}` },
-                        ] as const
-                      ).map(({ field, name }) => (
-                        <input
-                          key={field}
-                          type="number"
-                          name={name}
-                          step="0.1"
-                          value={row[field]}
-                          onChange={(e) => updateRow(row.id, field, e.target.value)}
-                          className="w-full rounded-md border border-[#e6e9e5] bg-white px-2 py-1 text-center font-jetbrains-mono text-xs tabular-nums text-[#0f1a14] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[#2f8a4a]"
-                          placeholder="–"
-                        />
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => removeThresholdRow(row.id)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#fceeec] hover:text-[#b9351f]"
-                        aria-label="この閾値行を削除"
+                      <div
+                        className={`grid grid-cols-[1fr_repeat(4,80px)_32px] items-center gap-2 rounded-lg border px-3 py-2 ${
+                          invalid ? 'border-[#f0b4b0] bg-[#fceeec]/30' : 'border-[#eef1ed] bg-[#f7f8f6]'
+                        }`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        <span className="text-sm text-[#0f1a14]">
+                          {st.label}
+                          {st.unit && (
+                            <span className="ml-1 text-xs text-[#8a978f]">({st.unit})</span>
+                          )}
+                        </span>
+                        {(
+                          [
+                            { field: 'alertMin' as const, name: `alert_min_${st.id}` },
+                            { field: 'optimalMin' as const, name: `optimal_min_${st.id}` },
+                            { field: 'optimalMax' as const, name: `optimal_max_${st.id}` },
+                            { field: 'alertMax' as const, name: `alert_max_${st.id}` },
+                          ] as const
+                        ).map(({ field, name }) => (
+                          <input
+                            key={field}
+                            type="number"
+                            name={name}
+                            step="0.1"
+                            value={row[field]}
+                            onChange={(e) => updateRow(row.id, field, e.target.value)}
+                            className={`w-full rounded-md border bg-white px-2 py-1 text-center font-jetbrains-mono text-xs tabular-nums text-[#0f1a14] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[#2f8a4a] ${
+                              invalid ? 'border-[#f0b4b0]' : 'border-[#e6e9e5]'
+                            }`}
+                            placeholder="–"
+                          />
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => removeThresholdRow(row.id)}
+                          className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#fceeec] hover:text-[#b9351f]"
+                          aria-label="この閾値行を削除"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {invalid && (
+                        <p className="px-1 text-xs text-[#b9351f]">
+                          順序が不正です（警下限 ≤ 適正下限 ≤ 適正上限 ≤ 警上限）
+                        </p>
+                      )}
                     </div>
                   )
                 })}
@@ -292,7 +347,7 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
 
           {/* センサー追加ドロップダウン */}
           {availableSensorTypes.length > 0 && (
-            <div className="relative mb-6">
+            <div className="relative mb-6" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setAddDropdownOpen((prev) => !prev)}
@@ -328,6 +383,12 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
             </p>
           )}
 
+          {hasInvalid && (
+            <p className="mb-4 text-sm text-[#b9351f]">
+              閾値の順序が正しくない行があります。修正してから追加してください。
+            </p>
+          )}
+
           {/* フッターボタン */}
           <div className="flex justify-end gap-3 border-t border-[#eef1ed] pt-4">
             <button
@@ -340,7 +401,7 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
             </button>
             <button
               type="submit"
-              disabled={isPending || nameValue.trim() === ''}
+              disabled={isPending || nameValue.trim() === '' || hasInvalid}
               className="rounded-md bg-[#246e3a] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
             >
               {isPending ? '追加中...' : '植物を追加'}
@@ -348,17 +409,6 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes overlayIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
     </div>
   )
 }

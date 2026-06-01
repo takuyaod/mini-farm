@@ -86,6 +86,7 @@ export function PlantMasterClient({
         onClose={() => setEditingPlant(null)}
       />
       <DeleteConfirmModal
+        key={deletingPlant?.id}
         plant={deletingPlant}
         onClose={() => setDeletingPlant(null)}
       />
