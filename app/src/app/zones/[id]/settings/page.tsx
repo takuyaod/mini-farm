@@ -8,6 +8,7 @@ import { ZoneSettingsName } from '@/features/zones/components/ZoneSettingsName'
 import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant'
 import { DeviceManagementSection } from '@/features/zones/components/ZoneSettingsDevice'
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
+import { ZoneSettingsDanger } from '@/features/zones/components/ZoneSettingsDanger'
 import type { Device, Plant, Sensor } from '@/features/dashboard/types'
 
 export async function generateMetadata({
@@ -104,6 +105,11 @@ export default async function ZoneSettingsPage({
               <ZoneSettingsSensor sensors={allActiveSensors} zoneId={id} />
             </section>
           )}
+
+          <section className="rounded-xl border border-red-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-base font-medium text-red-700">ゾーンを休止する</h2>
+            <ZoneSettingsDanger zoneId={id} />
+          </section>
         </div>
       </main>
     </div>

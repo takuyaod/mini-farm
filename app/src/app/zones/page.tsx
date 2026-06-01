@@ -19,7 +19,7 @@ async function getUnresolvedAlertCount(): Promise<number> {
 }
 
 export default async function ZonesPage() {
-  const [zones, totalUnresolvedAlerts] = await Promise.all([
+  const [zonesData, totalUnresolvedAlerts] = await Promise.all([
     getZones(),
     getUnresolvedAlertCount(),
   ])
@@ -36,7 +36,10 @@ export default async function ZonesPage() {
             全ゾーンの管理・操作
           </p>
         </div>
-        <ZoneListSection activeZones={zones} />
+        <ZoneListSection
+          activeZones={zonesData.activeZones}
+          inactiveZones={zonesData.inactiveZones}
+        />
       </main>
     </div>
   )
