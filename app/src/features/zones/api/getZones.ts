@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { Zone } from '@/features/dashboard/types'
+import type { Zone } from '../types'
 import type { ZoneListItem } from '../types'
 
 type ZonePlantRow = {
@@ -32,11 +32,11 @@ export async function getZones(): Promise<ZoneListItem[]> {
   ])
 
   const devices = devicesRes.data ?? []
-  const zonePlants = (zonePlantsRes.data ?? []) as unknown as ZonePlantRow[]
+  const rawZonePlants = (zonePlantsRes.data ?? []) as ZonePlantRow[]
 
   return zones.map((zone: Zone) => {
     const deviceCount = devices.filter((d) => d.zone_id === zone.id).length
-    const zonePlant = zonePlants.find((zp) => zp.zone_id === zone.id) ?? null
+    const zonePlant = rawZonePlants.find((zp) => zp.zone_id === zone.id) ?? null
     const currentPlantName = zonePlant?.plants?.name ?? null
 
     return {

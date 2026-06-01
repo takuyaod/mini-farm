@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ZoneListRow } from './ZoneListRow'
-import { AddZoneModal } from '@/features/dashboard/components/AddZoneModal'
+import { AddZoneModal } from '@/components/AddZoneModal'
 import type { ZoneListItem } from '../types'
 
 type Props = {
