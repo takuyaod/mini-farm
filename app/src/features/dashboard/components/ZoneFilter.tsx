@@ -1,10 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ZoneCard } from './ZoneCard'
-import { AddZoneModal } from './AddZoneModal'
 import type { ZoneCardData } from '../types'
 
 type FilterTab = 'all' | 'hydroponic' | 'soil' | 'alert'
@@ -22,7 +19,6 @@ type Props = {
 
 export function ZoneFilter({ zones }: Props) {
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
-  const [modalOpen, setModalOpen] = useState(false)
 
   const filteredZones = zones.filter((data) => {
     if (activeTab === 'all') return true
@@ -32,9 +28,7 @@ export function ZoneFilter({ zones }: Props) {
     return false
   })
 
-  const showAddCard = activeTab === 'all'
   const isSingleLayout = filteredZones.length <= 1
-  const hasContent = filteredZones.length > 0 || showAddCard
 
   return (
     <div>
@@ -61,7 +55,7 @@ export function ZoneFilter({ zones }: Props) {
       </div>
 
       {/* ゾーングリッド */}
-      {hasContent ? (
+      {filteredZones.length > 0 ? (
         <div
           className={isSingleLayout ? 'flex flex-col gap-4' : 'grid gap-4'}
           style={
@@ -73,24 +67,12 @@ export function ZoneFilter({ zones }: Props) {
           {filteredZones.map((zoneData) => (
             <ZoneCard key={zoneData.zone.id} data={zoneData} />
           ))}
-          {showAddCard && (
-            <Button
-              variant="ghost"
-              onClick={() => setModalOpen(true)}
-              className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c8d0c6] bg-white text-[#8a978f] transition-colors hover:border-[#246e3a] hover:bg-[#f2f7f3] hover:text-[#246e3a] h-auto"
-            >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm font-medium">ゾーンを追加</span>
-            </Button>
-          )}
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-[#8a978f]">
           該当するゾーンがありません
         </p>
       )}
-
-      <AddZoneModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   )
 }

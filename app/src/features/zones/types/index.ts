@@ -11,6 +11,12 @@ import type {
 
 export type { Alert, Device, Plant, PlantThreshold, Sensor, SensorWithReading, Zone, ZonePlant }
 
+export type ZoneListItem = {
+  zone: Zone
+  deviceCount: number
+  currentPlantName: string | null
+}
+
 export type SensorWithAlert = SensorWithReading & {
   alertBreachDirection: 'high' | 'low' | null
 }
