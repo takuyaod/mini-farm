@@ -258,7 +258,8 @@ CREATE INDEX idx_readings_sensor_time
 CREATE TABLE plants (
     id               UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     name             VARCHAR(100) NOT NULL,
-    cultivation_type cultivation_type NOT NULL  -- 'both' = 水耕・土壌どちらでも育てられる品種
+    cultivation_type cultivation_type NOT NULL,  -- 'both' = 水耕・土壌どちらでも育てられる品種
+    created_by       UUID REFERENCES auth.users(id) ON DELETE SET NULL
 );
 ```
 
@@ -491,8 +492,6 @@ ESP32 は `sensor_type` 文字列のみ送信する。
 | テーブル | SELECT | INSERT / UPDATE / DELETE |
 |---|---|---|
 | `sensor_type_masters` | 全員 OK | 不可（管理者のみ） |
-| `plants` | 全員 OK | 不可（管理者のみ） |
-| `plant_thresholds` | 全員 OK | 不可（管理者のみ） |
 
 ```sql
 -- 例：sensor_type_masters
@@ -513,6 +512,8 @@ CREATE POLICY "anyone can read" ON sensor_type_masters
 | `readings` | `zones.user_id = auth.uid()`（sensors → devices → zones を JOIN） |
 | `zone_plants` | `zones.user_id = auth.uid()`（zones を JOIN） |
 | `alerts` | `zones.user_id = auth.uid()`（sensors → devices → zones を JOIN） |
+| `plants` | `plants.created_by = auth.uid()` |
+| `plant_thresholds` | `plants.created_by = auth.uid()`（plants を JOIN） |
 
 ```sql
 -- 例：devices
