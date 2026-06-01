@@ -2,11 +2,10 @@
 
 import { useOptimistic, useTransition, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AlertCard } from './AlertCard'
 import { getAlerts } from '../api/getAlerts'
 import { resolveAlert } from '../api/resolveAlert'
-import type { AlertWithContext } from '../types'
+import type { AlertWithContext, AlertTypeFilter } from '../types'
 
 type Zone = { id: string; name: string }
 
@@ -15,6 +14,13 @@ type Props = {
   initialTotalCount: number
   zones: Zone[]
 }
+
+const TYPE_FILTER_OPTIONS: { value: AlertTypeFilter; label: string }[] = [
+  { value: 'all', label: '全種別' },
+  { value: 'high', label: '上限超過' },
+  { value: 'low', label: '下限割れ' },
+  { value: 'sensor_fault', label: 'センサー異常' },
+]
 
 const ZONE_COLORS = [
   '#246e3a',
@@ -37,6 +43,7 @@ function getZoneColor(zoneId: string): string {
 export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props) {
   const [tab, setTab] = useState<'unresolved' | 'resolved'>('unresolved')
   const [zoneId, setZoneId] = useState<string | undefined>(undefined)
+  const [typeFilter, setTypeFilter] = useState<AlertTypeFilter>('all')
   const [displayedAlerts, setDisplayedAlerts] = useState<AlertWithContext[]>(initialAlerts)
   const [totalCount, setTotalCount] = useState(initialTotalCount)
   const [isPending, startTransition] = useTransition()
@@ -53,7 +60,7 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
     if (newTab === tab) return
     setTab(newTab)
     startTransition(async () => {
-      const result = await getAlerts({ tab: newTab, zoneId })
+      const result = await getAlerts({ tab: newTab, zoneId, typeFilter })
       setDisplayedAlerts(result.alerts)
       setTotalCount(result.totalCount)
     })
@@ -63,7 +70,17 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
     if (newZoneId === zoneId) return
     setZoneId(newZoneId)
     startTransition(async () => {
-      const result = await getAlerts({ tab, zoneId: newZoneId })
+      const result = await getAlerts({ tab, zoneId: newZoneId, typeFilter })
+      setDisplayedAlerts(result.alerts)
+      setTotalCount(result.totalCount)
+    })
+  }
+
+  function handleTypeFilterChange(newFilter: AlertTypeFilter) {
+    if (newFilter === typeFilter) return
+    setTypeFilter(newFilter)
+    startTransition(async () => {
+      const result = await getAlerts({ tab, zoneId, typeFilter: newFilter })
       setDisplayedAlerts(result.alerts)
       setTotalCount(result.totalCount)
     })
@@ -75,6 +92,7 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
       const result = await getAlerts({
         tab,
         zoneId,
+        typeFilter,
         cursor: { started_at: lastAlert.started_at, id: lastAlert.id },
       })
       setDisplayedAlerts((prev) => [...prev, ...result.alerts])
@@ -161,88 +179,97 @@ export function AlertFilters({ initialAlerts, initialTotalCount, zones }: Props)
 
   return (
     <div className="space-y-4">
-      {/* タブ */}
-      <Tabs value={tab} onValueChange={(v) => handleTabChange(v as 'unresolved' | 'resolved')}>
-        <TabsList
-          className="mb-4 gap-1 rounded-xl border-surface-border bg-surface-muted p-1 shadow-none"
-        >
-          <TabsTrigger
-            value="unresolved"
-            className="flex-1 gap-2 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-[#0f1a14] data-[state=inactive]:text-[#4b5a52] data-[state=inactive]:hover:text-[#0f1a14]"
-          >
-            未解消
-            {unresolvedCount !== undefined && unresolvedCount > 0 && (
-              <span
-                className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold tabular-nums text-white"
-                style={{ backgroundColor: '#d6452c' }}
-              >
-                {unresolvedCount}
-              </span>
-            )}
-            {unresolvedCount === 0 && (
-              <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#cdd3cb] px-1 font-mono text-[10px] tabular-nums text-[#4b5a52]">
-                0
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger
-            value="resolved"
-            className="flex-1 gap-2 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-[#0f1a14] data-[state=inactive]:text-[#4b5a52] data-[state=inactive]:hover:text-[#0f1a14]"
-          >
-            解消済み
-            {resolvedCount !== undefined && (
-              <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#cdd3cb] px-1 font-mono text-[10px] tabular-nums text-[#4b5a52]">
-                {resolvedCount}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="unresolved" className="mt-0">
-          {ZoneFilterButtons}
-
-          {/* アラート一覧 */}
-          <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
-            {optimisticAlerts.length === 0 ? (
-              <p className="py-12 text-center text-[13px] text-[#8a978f]">
-                未解消のアラートはありません
-              </p>
-            ) : (
-              optimisticAlerts.map((alert) => (
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                  onResolve={handleResolve}
+      {/* タブバー（アンダーライン型） + 種別フィルター */}
+      <div
+        className="flex items-center justify-between border-b"
+        style={{ borderColor: '#e6e9e5' }}
+      >
+        {/* アンダーライン型タブ */}
+        <div className="flex">
+          {(
+            [
+              { value: 'unresolved', label: '未解消', count: unresolvedCount },
+              { value: 'resolved', label: '解消済み', count: resolvedCount },
+            ] as const
+          ).map(({ value, label, count }) => (
+            <button
+              key={value}
+              onClick={() => handleTabChange(value)}
+              className="relative flex items-center gap-2 px-4 pb-3 pt-1 text-[13px] font-medium transition-colors"
+              style={{
+                color: tab === value ? '#0f1a14' : '#4b5a52',
+              }}
+            >
+              {label}
+              {count !== undefined && (
+                <span
+                  className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold tabular-nums"
+                  style={
+                    value === 'unresolved' && count > 0
+                      ? { backgroundColor: '#d6452c', color: '#fff' }
+                      : { backgroundColor: '#eef1ed', color: '#4b5a52' }
+                  }
+                >
+                  {count}
+                </span>
+              )}
+              {/* アクティブアンダーライン */}
+              {tab === value && (
+                <span
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
+                  style={{ backgroundColor: '#0f1a14' }}
                 />
-              ))
-            )}
-          </div>
+              )}
+            </button>
+          ))}
+        </div>
 
-          {LoadMoreSection}
-        </TabsContent>
+        {/* 種別フィルターボタン群 */}
+        <div className="flex items-center gap-1 pb-2">
+          {TYPE_FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleTypeFilterChange(opt.value)}
+              className="inline-flex items-center rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors"
+              style={
+                typeFilter === opt.value
+                  ? { backgroundColor: '#0f1a14', color: '#fff' }
+                  : {
+                      backgroundColor: 'transparent',
+                      color: '#4b5a52',
+                      border: '1px solid #e6e9e5',
+                    }
+              }
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <TabsContent value="resolved" className="mt-0">
-          {ZoneFilterButtons}
+      {/* タブコンテンツ */}
+      <div>
+        {ZoneFilterButtons}
 
-          {/* アラート一覧 */}
-          <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
-            {optimisticAlerts.length === 0 ? (
-              <p className="py-12 text-center text-[13px] text-[#8a978f]">
-                解消済みのアラートはありません
-              </p>
-            ) : (
-              optimisticAlerts.map((alert) => (
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                />
-              ))
-            )}
-          </div>
+        {/* アラート一覧 */}
+        <div className={`space-y-3 ${isPending ? 'opacity-60' : ''}`}>
+          {optimisticAlerts.length === 0 ? (
+            <p className="py-12 text-center text-[13px] text-[#8a978f]">
+              {tab === 'unresolved' ? '未解消のアラートはありません' : '解消済みのアラートはありません'}
+            </p>
+          ) : (
+            optimisticAlerts.map((alert) => (
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                onResolve={tab === 'unresolved' ? handleResolve : undefined}
+              />
+            ))
+          )}
+        </div>
 
-          {LoadMoreSection}
-        </TabsContent>
-      </Tabs>
+        {LoadMoreSection}
+      </div>
     </div>
   )
 }
