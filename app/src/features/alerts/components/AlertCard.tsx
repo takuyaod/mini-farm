@@ -58,24 +58,18 @@ function AlertTypeIcon({ alert }: { alert: AlertWithContext }) {
 
   if (isSensorFault) {
     return (
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: '#fdf3e2' }}
-      >
-        <Wifi className="h-5 w-5" style={{ color: '#b1740a' }} />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fdf3e2]">
+        <Wifi className="h-5 w-5 text-[#b1740a]" />
       </div>
     )
   }
 
   return (
-    <div
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-      style={{ backgroundColor: '#fceeec' }}
-    >
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-alert-bg">
       {isHigh ? (
-        <ArrowUp className="h-5 w-5" style={{ color: '#d6452c' }} />
+        <ArrowUp className="h-5 w-5 text-[#d6452c]" />
       ) : (
-        <ArrowDown className="h-5 w-5" style={{ color: '#d6452c' }} />
+        <ArrowDown className="h-5 w-5 text-[#d6452c]" />
       )}
     </div>
   )
@@ -89,13 +83,12 @@ export function AlertCard({ alert, onResolve }: Props) {
 
   return (
     <div
-      className="rounded-xl bg-white"
+      className="rounded-xl bg-white shadow-[0_1px_0_rgba(15,26,20,.02),0_1px_2px_rgba(15,26,20,.04)]"
       style={{
         border: '1px solid #e6e9e5',
         borderLeftColor: borderColor,
         borderLeftWidth: '4px',
         opacity: isResolved ? 0.78 : 1,
-        boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
       }}
     >
       <div className="flex items-start gap-3 px-4 py-4">
@@ -107,31 +100,19 @@ export function AlertCard({ alert, onResolve }: Props) {
           {/* バッジ行：種別・センサーラベル・デバイスID */}
           <div className="flex flex-wrap items-center gap-1.5">
             {isSensorFault ? (
-              <span
-                className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
-                style={{ backgroundColor: '#b1740a' }}
-              >
+              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white bg-[#b1740a]">
                 {getBadgeLabel(alert)}
               </span>
             ) : (
-              <span
-                className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
-                style={{ backgroundColor: '#d6452c' }}
-              >
+              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white bg-[#d6452c]">
                 {getBadgeLabel(alert)}
               </span>
             )}
-            <span
-              className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium"
-              style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
-            >
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-surface-muted text-[#4b5a52]">
               {alert.sensorLabel}
             </span>
             {alert.deviceId && (
-              <span
-                className="inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] font-medium"
-                style={{ backgroundColor: '#eef1ed', color: '#8a978f' }}
-              >
+              <span className="inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] font-medium bg-surface-muted text-content-muted">
                 {alert.deviceId.slice(0, 8)}
               </span>
             )}
@@ -139,7 +120,7 @@ export function AlertCard({ alert, onResolve }: Props) {
 
           {/* タイトル行：センサー名を赤テキストで強調 */}
           <p className="text-[13.5px] font-medium leading-snug text-[#0f1a14]">
-            <span style={{ color: isSensorFault ? '#b1740a' : '#b9351f' }}>
+            <span className={isSensorFault ? 'text-[#b1740a]' : 'text-alert-text'}>
               {alert.sensorLabel}
             </span>
             {getAlertTitle(alert)}
@@ -156,10 +137,7 @@ export function AlertCard({ alert, onResolve }: Props) {
           {(alert.triggered_value !== null || alert.alertThresholdValue !== null) && (
             <div className="flex flex-wrap gap-2">
               {alert.triggered_value !== null && (
-                <span
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
-                  style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
-                >
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums bg-surface-muted text-[#4b5a52]">
                   発報値:{' '}
                   <span className="ml-0.5 font-mono tabular-nums">
                     {alert.triggered_value}
@@ -168,10 +146,7 @@ export function AlertCard({ alert, onResolve }: Props) {
                 </span>
               )}
               {alert.alertThresholdValue !== null && (
-                <span
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
-                  style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
-                >
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums bg-surface-muted text-[#4b5a52]">
                   {alert.breach_direction === 'high' ? '上限' : '下限'}:{' '}
                   <span className="ml-0.5 font-mono tabular-nums">
                     {alert.alertThresholdValue}
@@ -192,15 +167,15 @@ export function AlertCard({ alert, onResolve }: Props) {
             </p>
             {isResolved && alert.resolved_at ? (
               <div className="mt-0.5 flex items-center justify-end gap-1">
-                <CheckCircle2 className="h-3 w-3" style={{ color: '#246e3a' }} />
-                <p className="font-mono text-[11px] font-medium tabular-nums" style={{ color: '#246e3a' }}>
+                <CheckCircle2 className="h-3 w-3 text-brand-default" />
+                <p className="font-mono text-[11px] font-medium tabular-nums text-brand-default">
                   解消 · 継続 {formatDuration(alert.started_at, alert.resolved_at)}
                 </p>
               </div>
             ) : (
               <div className="mt-0.5 flex items-center justify-end gap-1">
-                <AlertCircle className="h-3 w-3 shrink-0" style={{ color: '#d6452c' }} />
-                <p className="font-mono text-[11px] tabular-nums" style={{ color: '#d6452c' }}>
+                <AlertCircle className="h-3 w-3 shrink-0 text-[#d6452c]" />
+                <p className="font-mono text-[11px] tabular-nums text-[#d6452c]">
                   {elapsed}経過
                 </p>
               </div>
@@ -211,19 +186,7 @@ export function AlertCard({ alert, onResolve }: Props) {
           <div className="flex items-center gap-1.5">
             <Link
               href={`/zones/${alert.zoneId}`}
-              className="inline-flex h-7 items-center rounded-md border px-2.5 text-[12px] font-medium transition-colors"
-              style={{
-                borderColor: '#e6e9e5',
-                color: '#4b5a52',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f7f8f6'
-                e.currentTarget.style.color = '#0f1a14'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.color = '#4b5a52'
-              }}
+              className="inline-flex h-7 items-center rounded-md border border-surface-border px-2.5 text-[12px] font-medium text-[#4b5a52] transition-colors hover:bg-surface-bg hover:text-[#0f1a14]"
             >
               詳細
             </Link>
@@ -231,14 +194,7 @@ export function AlertCard({ alert, onResolve }: Props) {
               <Button
                 size="sm"
                 onClick={() => onResolve(alert.id)}
-                className="h-7 border-0 px-2.5 text-[12px] font-medium text-white"
-                style={{ backgroundColor: '#246e3a' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2f8a4a'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#246e3a'
-                }}
+                className="h-7 border-0 bg-brand-default px-2.5 text-[12px] font-medium text-white hover:bg-[#2f8a4a]"
               >
                 解消
               </Button>

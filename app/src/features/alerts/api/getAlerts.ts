@@ -1,9 +1,20 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { AlertWithContext, AlertsResult, AlertSummary, GetAlertsParams } from '../types'
+import type { AlertTypeFilter, AlertWithContext, AlertsResult, AlertSummary, GetAlertsParams } from '../types'
 
 const PAGE_SIZE = 20
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyTypeFilter<T extends { eq: (...args: any[]) => T }>(
+  q: T,
+  typeFilter: AlertTypeFilter | undefined
+): T {
+  if (!typeFilter || typeFilter === 'all') return q
+  if (typeFilter === 'sensor_fault') return q.eq('alert_type', 'sensor_fault')
+  if (typeFilter === 'high') return q.eq('alert_type', 'threshold_breach').eq('breach_direction', 'high')
+  return q.eq('alert_type', 'threshold_breach').eq('breach_direction', 'low')
+}
 
 type RawAlert = {
   id: string
@@ -115,16 +126,7 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
     let q = supabase.from('alerts').select('id', { count: 'exact', head: true })
     q = tab === 'unresolved' ? q.is('resolved_at', null) : q.not('resolved_at', 'is', null)
     if (sensorIdFilter) q = q.in('sensor_id', sensorIdFilter)
-    if (typeFilter && typeFilter !== 'all') {
-      if (typeFilter === 'sensor_fault') {
-        q = q.eq('alert_type', 'sensor_fault')
-      } else if (typeFilter === 'high') {
-        q = q.eq('alert_type', 'threshold_breach').eq('breach_direction', 'high')
-      } else if (typeFilter === 'low') {
-        q = q.eq('alert_type', 'threshold_breach').eq('breach_direction', 'low')
-      }
-    }
-    return q
+    return applyTypeFilter(q, typeFilter)
   }
 
   let alertsQuery = supabase
@@ -137,15 +139,7 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
       ? alertsQuery.is('resolved_at', null)
       : alertsQuery.not('resolved_at', 'is', null)
   if (sensorIdFilter) alertsQuery = alertsQuery.in('sensor_id', sensorIdFilter)
-  if (typeFilter && typeFilter !== 'all') {
-    if (typeFilter === 'sensor_fault') {
-      alertsQuery = alertsQuery.eq('alert_type', 'sensor_fault')
-    } else if (typeFilter === 'high') {
-      alertsQuery = alertsQuery.eq('alert_type', 'threshold_breach').eq('breach_direction', 'high')
-    } else if (typeFilter === 'low') {
-      alertsQuery = alertsQuery.eq('alert_type', 'threshold_breach').eq('breach_direction', 'low')
-    }
-  }
+  alertsQuery = applyTypeFilter(alertsQuery, typeFilter)
   if (cursor) {
     alertsQuery = alertsQuery.or(
       `started_at.lt.${cursor.started_at},and(started_at.eq.${cursor.started_at},id.lt.${cursor.id})`

@@ -71,11 +71,7 @@ export function AlertSummaryCards({ summary }: Props) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="flex flex-col gap-3 rounded-xl bg-white p-4"
-          style={{
-            border: '1px solid #e6e9e5',
-            boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
-          }}
+          className="flex flex-col gap-3 rounded-xl bg-white border border-surface-border p-4 shadow-[0_1px_0_rgba(15,26,20,.02),0_1px_2px_rgba(15,26,20,.04)]"
         >
           <div className="flex items-center justify-between">
             <p className="text-[12px] font-medium text-[#4b5a52]">{card.label}</p>
@@ -94,10 +90,7 @@ export function AlertSummaryCards({ summary }: Props) {
               {card.value}
             </p>
             {card.sub && (
-              <p
-                className="mt-1 text-[11px] font-medium"
-                style={{ color: card.sub.positive ? '#246e3a' : '#b9351f' }}
-              >
+              <p className={`mt-1 text-[11px] font-medium ${card.sub.positive ? 'text-brand-default' : 'text-alert-text'}`}>
                 {card.sub.text}
               </p>
             )}

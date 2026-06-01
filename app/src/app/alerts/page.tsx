@@ -23,7 +23,7 @@ export default async function AlertsPage() {
   const zones = (zonesResult.data ?? []) as { id: string; name: string }[]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f7f8f6' }}>
+    <div className="min-h-screen bg-surface-bg">
       <Header alertCount={initialData.totalCount} />
       <main className="mx-auto max-w-[1400px] px-8 py-7">
         {/* ページヘッダー行 */}
@@ -40,7 +40,7 @@ export default async function AlertsPage() {
               <ChevronRight className="h-3 w-3" />
               <span className="text-[#4b5a52]">アラート</span>
             </nav>
-            <h1 className="text-[22px] font-semibold tracking-tight" style={{ color: '#0f1a14' }}>
+            <h1 className="text-[22px] font-semibold tracking-tight text-[#0f1a14]">
               アラート
             </h1>
           </div>
@@ -48,8 +48,7 @@ export default async function AlertsPage() {
           {/* アクションボタン群 */}
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors hover:bg-white"
-              style={{ borderColor: '#e6e9e5', color: '#4b5a52' }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-border px-3 py-2 text-[13px] font-medium text-[#4b5a52] transition-colors hover:bg-white"
               disabled
               title="検索（準備中）"
             >
@@ -57,8 +56,7 @@ export default async function AlertsPage() {
               検索
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors hover:bg-white"
-              style={{ borderColor: '#e6e9e5', color: '#4b5a52' }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-border px-3 py-2 text-[13px] font-medium text-[#4b5a52] transition-colors hover:bg-white"
               disabled
               title="CSV出力（準備中）"
             >
@@ -66,8 +64,7 @@ export default async function AlertsPage() {
               CSV出力
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors hover:bg-white"
-              style={{ borderColor: '#e6e9e5', color: '#4b5a52' }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-border px-3 py-2 text-[13px] font-medium text-[#4b5a52] transition-colors hover:bg-white"
               disabled
               title="通知設定（準備中）"
             >
@@ -81,13 +78,7 @@ export default async function AlertsPage() {
         <AlertSummaryCards summary={summary} />
 
         {/* フィルター＋アラート一覧 */}
-        <div
-          className="rounded-xl bg-white p-6"
-          style={{
-            border: '1px solid #e6e9e5',
-            boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
-          }}
-        >
+        <div className="rounded-xl bg-white border border-surface-border p-6 shadow-[0_1px_0_rgba(15,26,20,.02),0_1px_2px_rgba(15,26,20,.04)]">
           <AlertFilters
             initialAlerts={initialData.alerts}
             initialTotalCount={initialData.totalCount}
