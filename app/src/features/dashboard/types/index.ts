@@ -70,6 +70,7 @@ export type Zone = {
   name: string
   type: 'hydroponic' | 'soil'
   created_at: string
+  is_active: boolean
 }
 
 export type SensorWithReading = Sensor & {

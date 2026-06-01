@@ -8,7 +8,12 @@ type ZonePlantRow = {
   plants: { name: string } | null
 }
 
-export async function getZones(): Promise<ZoneListItem[]> {
+export type ZonesData = {
+  activeZones: ZoneListItem[]
+  inactiveZones: ZoneListItem[]
+}
+
+export async function getZones(): Promise<ZonesData> {
   const supabase = await createClient()
 
   const { data: zones, error: zonesError } = await supabase
@@ -17,7 +22,7 @@ export async function getZones(): Promise<ZoneListItem[]> {
     .order('created_at', { ascending: true })
 
   if (zonesError || !zones || zones.length === 0) {
-    return []
+    return { activeZones: [], inactiveZones: [] }
   }
 
   const zoneIds = zones.map((z: Zone) => z.id)
@@ -34,7 +39,7 @@ export async function getZones(): Promise<ZoneListItem[]> {
   const devices = devicesRes.data ?? []
   const rawZonePlants = (zonePlantsRes.data ?? []) as ZonePlantRow[]
 
-  return zones.map((zone: Zone) => {
+  const items: ZoneListItem[] = zones.map((zone: Zone) => {
     const deviceCount = devices.filter((d) => d.zone_id === zone.id).length
     const zonePlant = rawZonePlants.find((zp) => zp.zone_id === zone.id) ?? null
     const currentPlantName = zonePlant?.plants?.name ?? null
@@ -45,4 +50,9 @@ export async function getZones(): Promise<ZoneListItem[]> {
       currentPlantName,
     }
   })
+
+  return {
+    activeZones: items.filter((item) => item.zone.is_active),
+    inactiveZones: items.filter((item) => !item.zone.is_active),
+  }
 }
