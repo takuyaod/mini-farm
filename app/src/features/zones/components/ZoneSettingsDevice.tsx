@@ -16,10 +16,14 @@ function ApiKeyCopyButton({ apiKey }: { apiKey: string }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(apiKey)
-    setCopied(true)
-    toast.success('APIキーをコピーしました')
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(apiKey)
+      setCopied(true)
+      toast.success('APIキーをコピーしました')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('コピーに失敗しました')
+    }
   }
 
   return (
