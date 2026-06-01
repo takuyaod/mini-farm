@@ -13,6 +13,7 @@ export type AlertWithContext = {
   zoneName: string
   plantName: string | null
   alertThresholdValue: number | null
+  deviceId?: string | null
 }
 
 export type AlertCursor = {
@@ -20,13 +21,24 @@ export type AlertCursor = {
   id: string
 }
 
+export type AlertTypeFilter = 'all' | 'high' | 'low' | 'sensor_fault'
+
 export type GetAlertsParams = {
   tab: 'unresolved' | 'resolved'
   zoneId?: string
+  typeFilter?: AlertTypeFilter
   cursor?: AlertCursor
 }
 
 export type AlertsResult = {
   alerts: AlertWithContext[]
   totalCount: number
+}
+
+export type AlertSummary = {
+  unresolvedThreshold: number
+  unresolvedSensorFault: number
+  todayTotal: number
+  avgResolveMinutes: number | null
+  avgResolveMinutesPrevWeek: number | null
 }

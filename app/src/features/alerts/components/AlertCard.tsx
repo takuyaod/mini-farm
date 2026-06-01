@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+import { ArrowUp, ArrowDown, Wifi, MapPin, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AlertWithContext } from '../types'
 
@@ -16,28 +18,29 @@ function getBadgeLabel(alert: AlertWithContext): string {
 }
 
 function getAlertTitle(alert: AlertWithContext): string {
-  if (alert.alert_type === 'sensor_fault') return `${alert.sensorLabel} でセンサー異常が発生しています`
-  if (alert.breach_direction === 'high') return `${alert.sensorLabel} が上限を超過しています`
-  if (alert.breach_direction === 'low') return `${alert.sensorLabel} が下限を下回っています`
-  return `${alert.sensorLabel} で異常が発生しています`
+  if (alert.alert_type === 'sensor_fault') return `でセンサー異常が発生しています`
+  if (alert.breach_direction === 'high') return `が上限を超過しています`
+  if (alert.breach_direction === 'low') return `が下限を下回っています`
+  return `で異常が発生しています`
 }
 
 function formatElapsed(startedAt: string): string {
   const diffMs = Date.now() - new Date(startedAt).getTime()
   const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 60) return `${Math.max(minutes, 1)}分前`
+  if (minutes < 60) return `${Math.max(minutes, 1)}分`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}時間前`
-  return `${Math.floor(hours / 24)}日前`
+  if (hours < 24) return `${hours}時間`
+  return `${Math.floor(hours / 24)}日`
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('ja-JP', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+function formatDateTime(dateStr: string): string {
+  const d = new Date(dateStr)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hour = String(d.getHours()).padStart(2, '0')
+  const minute = String(d.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
 function formatDuration(startedAt: string, resolvedAt: string): string {
@@ -49,98 +52,199 @@ function formatDuration(startedAt: string, resolvedAt: string): string {
   return `${Math.floor(hours / 24)}日`
 }
 
-const BORDER_COLOR: Record<string, string> = {
-  threshold_breach: '#d6452c',
-  sensor_fault: '#b1740a',
+function AlertTypeIcon({ alert }: { alert: AlertWithContext }) {
+  const isSensorFault = alert.alert_type === 'sensor_fault'
+  const isHigh = alert.breach_direction === 'high'
+
+  if (isSensorFault) {
+    return (
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+        style={{ backgroundColor: '#fdf3e2' }}
+      >
+        <Wifi className="h-5 w-5" style={{ color: '#b1740a' }} />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+      style={{ backgroundColor: '#fceeec' }}
+    >
+      {isHigh ? (
+        <ArrowUp className="h-5 w-5" style={{ color: '#d6452c' }} />
+      ) : (
+        <ArrowDown className="h-5 w-5" style={{ color: '#d6452c' }} />
+      )}
+    </div>
+  )
 }
 
 export function AlertCard({ alert, onResolve }: Props) {
   const isResolved = alert.resolved_at !== null
-  const borderColor = BORDER_COLOR[alert.alert_type] ?? '#d6452c'
   const isSensorFault = alert.alert_type === 'sensor_fault'
+  const borderColor = isSensorFault ? '#b1740a' : '#d6452c'
+  const elapsed = formatElapsed(alert.started_at)
 
   return (
     <div
-      className="rounded-xl bg-white px-5 py-4"
+      className="rounded-xl bg-white"
       style={{
         border: '1px solid #e6e9e5',
         borderLeftColor: borderColor,
         borderLeftWidth: '4px',
-        opacity: isResolved ? 0.75 : 1,
+        opacity: isResolved ? 0.78 : 1,
         boxShadow: '0 1px 0 rgba(15,26,20,.02), 0 1px 2px rgba(15,26,20,.04)',
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          {/* バッジ行 */}
+      <div className="flex items-start gap-3 px-4 py-4">
+        {/* アイコンカラム */}
+        <AlertTypeIcon alert={alert} />
+
+        {/* メインコンテンツ */}
+        <div className="min-w-0 flex-1 space-y-2">
+          {/* バッジ行：種別・センサーラベル・デバイスID */}
           <div className="flex flex-wrap items-center gap-1.5">
             {isSensorFault ? (
-              <span className="inline-flex items-center rounded bg-[#b1740a] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+              <span
+                className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
+                style={{ backgroundColor: '#b1740a' }}
+              >
                 {getBadgeLabel(alert)}
               </span>
             ) : (
-              <span className="inline-flex items-center rounded bg-[#d6452c] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+              <span
+                className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
+                style={{ backgroundColor: '#d6452c' }}
+              >
                 {getBadgeLabel(alert)}
+              </span>
+            )}
+            <span
+              className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium"
+              style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
+            >
+              {alert.sensorLabel}
+            </span>
+            {alert.deviceId && (
+              <span
+                className="inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] font-medium"
+                style={{ backgroundColor: '#eef1ed', color: '#8a978f' }}
+              >
+                {alert.deviceId.slice(0, 8)}
               </span>
             )}
           </div>
 
-          {/* タイトル */}
-          <p className="text-[14px] font-medium leading-snug text-[#0f1a14]">
+          {/* タイトル行：センサー名を赤テキストで強調 */}
+          <p className="text-[13.5px] font-medium leading-snug text-[#0f1a14]">
+            <span style={{ color: isSensorFault ? '#b1740a' : '#b9351f' }}>
+              {alert.sensorLabel}
+            </span>
             {getAlertTitle(alert)}
           </p>
 
           {/* ゾーン名・植物名 */}
-          <p className="text-[12.5px] text-[#4b5a52]">
+          <p className="flex items-center gap-1 text-[12px] text-[#4b5a52]">
+            <MapPin className="h-3 w-3 shrink-0 text-[#8a978f]" />
             {alert.zoneName}
             {alert.plantName && <> · {alert.plantName}</>}
           </p>
 
           {/* 発報値・閾値バッジ */}
-          <div className="flex flex-wrap gap-2">
-            {alert.triggered_value !== null && (
-              <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
-                発報値:{' '}
-                <span className="ml-0.5 font-mono tabular-nums">
-                  {alert.triggered_value}
-                  {alert.unit ? ` ${alert.unit}` : ''}
+          {(alert.triggered_value !== null || alert.alertThresholdValue !== null) && (
+            <div className="flex flex-wrap gap-2">
+              {alert.triggered_value !== null && (
+                <span
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
+                  style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
+                >
+                  発報値:{' '}
+                  <span className="ml-0.5 font-mono tabular-nums">
+                    {alert.triggered_value}
+                    {alert.unit ? ` ${alert.unit}` : ''}
+                  </span>
                 </span>
-              </span>
-            )}
-            {alert.alertThresholdValue !== null && (
-              <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-[#4b5a52]">
-                {alert.breach_direction === 'high' ? '上限' : '下限'}:{' '}
-                <span className="ml-0.5 font-mono tabular-nums">
-                  {alert.alertThresholdValue}
-                  {alert.unit ? ` ${alert.unit}` : ''}
+              )}
+              {alert.alertThresholdValue !== null && (
+                <span
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums"
+                  style={{ backgroundColor: '#eef1ed', color: '#4b5a52' }}
+                >
+                  {alert.breach_direction === 'high' ? '上限' : '下限'}:{' '}
+                  <span className="ml-0.5 font-mono tabular-nums">
+                    {alert.alertThresholdValue}
+                    {alert.unit ? ` ${alert.unit}` : ''}
+                  </span>
                 </span>
-              </span>
-            )}
-          </div>
-
-          {/* 解消済み / 経過時間 */}
-          {isResolved && alert.resolved_at ? (
-            <p className="font-mono text-[11.5px] font-medium tabular-nums text-[#246e3a]">
-              解消済み · {formatDate(alert.resolved_at)} · 継続{' '}
-              {formatDuration(alert.started_at, alert.resolved_at)}
-            </p>
-          ) : (
-            <p className="font-mono text-[11.5px] tabular-nums text-[#8a978f]">
-              {formatElapsed(alert.started_at)}
-            </p>
+              )}
+            </div>
           )}
         </div>
 
-        {!isResolved && onResolve && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onResolve(alert.id)}
-            className="shrink-0 border-surface-border text-[#4b5a52] hover:border-[#cdd3cb] hover:bg-surface-muted hover:text-[#0f1a14]"
-          >
-            解消
-          </Button>
-        )}
+        {/* 右カラム：日時・経過時間・アクション */}
+        <div className="flex shrink-0 flex-col items-end gap-2.5">
+          {/* 発報日時 */}
+          <div className="text-right">
+            <p className="text-[11px] font-medium tabular-nums text-[#4b5a52]">
+              {formatDateTime(alert.started_at)}
+            </p>
+            {isResolved && alert.resolved_at ? (
+              <div className="mt-0.5 flex items-center justify-end gap-1">
+                <CheckCircle2 className="h-3 w-3" style={{ color: '#246e3a' }} />
+                <p className="font-mono text-[11px] font-medium tabular-nums" style={{ color: '#246e3a' }}>
+                  解消 · 継続 {formatDuration(alert.started_at, alert.resolved_at)}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-0.5 flex items-center justify-end gap-1">
+                <AlertCircle className="h-3 w-3 shrink-0" style={{ color: '#d6452c' }} />
+                <p className="font-mono text-[11px] tabular-nums" style={{ color: '#d6452c' }}>
+                  {elapsed}経過
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* アクションボタン群 */}
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={`/zones/${alert.zoneId}`}
+              className="inline-flex h-7 items-center rounded-md border px-2.5 text-[12px] font-medium transition-colors"
+              style={{
+                borderColor: '#e6e9e5',
+                color: '#4b5a52',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f7f8f6'
+                e.currentTarget.style.color = '#0f1a14'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = '#4b5a52'
+              }}
+            >
+              詳細
+            </Link>
+            {!isResolved && onResolve && (
+              <Button
+                size="sm"
+                onClick={() => onResolve(alert.id)}
+                className="h-7 border-0 px-2.5 text-[12px] font-medium text-white"
+                style={{ backgroundColor: '#246e3a' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#2f8a4a'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#246e3a'
+                }}
+              >
+                解消
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
