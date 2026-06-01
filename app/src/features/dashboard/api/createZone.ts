@@ -29,5 +29,6 @@ export async function createZone(
   if (error) return { success: false, error: error.message }
 
   revalidatePath('/')
+  revalidatePath('/zones')
   return { success: true }
 }
