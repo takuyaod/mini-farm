@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
     .eq("id", device.zone_id)
     .maybeSingle()
 
-  if (!zone || !zone.is_active) {
+  if (!zone) {
+    return jsonResponse({ error: "Zone not found" }, 404)
+  }
+
+  if (!zone.is_active) {
     return jsonResponse({ error: "Zone is inactive" }, 403)
   }
 

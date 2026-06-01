@@ -21,7 +21,7 @@ export async function getZones(): Promise<ZonesData> {
     .select('*')
     .order('created_at', { ascending: true })
 
-  if (zonesError || !zones || zones.length === 0) {
+  if (zonesError || !zones) {
     return { activeZones: [], inactiveZones: [] }
   }
 
