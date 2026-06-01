@@ -25,7 +25,12 @@ export async function upsertThresholds(
     .eq('id', plantId)
     .single()
 
-  if (plantError || !plant) return { success: false, error: '植物が見つかりません' }
+  if (plantError) {
+    console.error('[upsertThresholds] plant fetch error:', plantError)
+    return { success: false, error: `植物の取得に失敗しました: ${plantError.message}` }
+  }
+  if (!plant) return { success: false, error: '植物が見つかりません' }
+  if (plant.created_by === null) return { success: false, error: 'システム植物の閾値は編集できません' }
   if (plant.created_by !== user.id) return { success: false, error: 'この植物の閾値を編集する権限がありません' }
 
   const sensorTypeIds = formData.getAll('sensor_type_id') as string[]
