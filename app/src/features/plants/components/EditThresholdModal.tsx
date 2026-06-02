@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Leaf, Plus, Trash2, X } from 'lucide-react'
+import { ChevronDown, Leaf, Plus, Settings, Trash2, X } from 'lucide-react'
 import { upsertThresholds } from '../api/upsertThresholds'
 import type { UpsertThresholdsState } from '../api/upsertThresholds'
 import { ThresholdScale } from './ThresholdScale'
@@ -199,12 +199,15 @@ export function EditThresholdModal({
               <Leaf className="h-4.5 w-4.5 text-[#2f8a4a]" />
             </div>
             <div>
-              <h2 id="edit-threshold-modal-title" className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
-                {plant.name}
-              </h2>
-              <div className="mt-0.5">
+              <div className="flex items-center gap-2">
+                <h2 id="edit-threshold-modal-title" className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
+                  {plant.name}
+                </h2>
                 <CultivationBadge type={plant.cultivation_type} />
               </div>
+              <p className="mt-0.5 text-[14px] text-[#8a978f]">
+                センサー種別ごとの適正値・警告閾値を編集
+              </p>
             </div>
           </div>
           <button
@@ -221,14 +224,23 @@ export function EditThresholdModal({
           <input type="hidden" name="plant_id" value={plant.id} />
 
           {/* 凡例バー */}
-          <div className="mb-5 rounded-lg border border-[#eef1ed] bg-[#f7f8f6] px-4 py-3">
-            <div className="mb-1 flex items-center justify-between text-[10.5px] font-semibold uppercase tracking-wider text-[#8a978f]">
-              <span>警告下限</span>
-              <span>適正下限</span>
-              <span>適正上限</span>
-              <span>警告上限</span>
+          <div className="mb-5 flex items-center justify-between rounded-lg border border-[#eef1ed] bg-[#f7f8f6] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-medium text-[#8a978f]">範囲の見方</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: '#2f8a4a' }} />
+                <span className="text-[11px] text-[#4b5a52]">適正範囲</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: '#f7e6c4' }} />
+                <span className="text-[11px] text-[#4b5a52]">警告までの余裕</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: '#f0b4b0' }} />
+                <span className="text-[11px] text-[#4b5a52]">警告域</span>
+              </span>
             </div>
-            <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-[#f0b4b0] via-[#f7e6c4] via-[#d6ead9] via-[#f7e6c4] to-[#f0b4b0]" />
+            <span className="text-[11px] text-[#8a978f]">警下限 ≤ 適正下限 ≤ 適正上限 ≤ 警上限</span>
           </div>
 
           {/* テーブルヘッダー */}
@@ -237,10 +249,16 @@ export function EditThresholdModal({
               <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[#8a978f]">
                 センサー
               </span>
-              {['警下限', '適正下限', '適正上限', '警上限'].map((label) => (
+              {[
+                { label: '警告下限', color: '#b9351f' },
+                { label: '適正下限', color: '#246e3a' },
+                { label: '適正上限', color: '#246e3a' },
+                { label: '警告上限', color: '#b9351f' },
+              ].map(({ label, color }) => (
                 <span
                   key={label}
-                  className="text-center text-[10.5px] font-semibold uppercase tracking-wider text-[#8a978f]"
+                  className="text-center text-[10.5px] font-semibold uppercase tracking-wider"
+                  style={{ color }}
                 >
                   {label}
                 </span>
@@ -263,20 +281,20 @@ export function EditThresholdModal({
                       invalid ? 'border-[#f0b4b0] bg-[#fceeec]/30' : 'border-[#eef1ed] bg-[#f7f8f6]'
                     }`}
                   >
-                    <span className="text-sm text-[#0f1a14]">
-                      {st.label}
+                    <div className="flex flex-col">
+                      <span className="text-[14px] text-[#0f1a14]">{st.label}</span>
                       {st.unit && (
-                        <span className="ml-1 text-xs text-[#8a978f]">({st.unit})</span>
+                        <span className="text-[11px] text-[#8a978f]">{st.unit}</span>
                       )}
-                    </span>
+                    </div>
                     {(
                       [
-                        { field: 'alertMin' as const, name: `alert_min_${st.id}` },
-                        { field: 'optimalMin' as const, name: `optimal_min_${st.id}` },
-                        { field: 'optimalMax' as const, name: `optimal_max_${st.id}` },
-                        { field: 'alertMax' as const, name: `alert_max_${st.id}` },
+                        { field: 'alertMin' as const, name: `alert_min_${st.id}`, type: 'alert' },
+                        { field: 'optimalMin' as const, name: `optimal_min_${st.id}`, type: 'optimal' },
+                        { field: 'optimalMax' as const, name: `optimal_max_${st.id}`, type: 'optimal' },
+                        { field: 'alertMax' as const, name: `alert_max_${st.id}`, type: 'alert' },
                       ] as const
-                    ).map(({ field, name }) => (
+                    ).map(({ field, name, type }) => (
                       <input
                         key={field}
                         type="number"
@@ -284,8 +302,12 @@ export function EditThresholdModal({
                         step="0.1"
                         value={row[field]}
                         onChange={(e) => updateRow(row.sensorTypeId, field, e.target.value)}
-                        className={`w-full rounded-md border bg-white px-2 py-1 text-center font-jetbrains-mono text-xs tabular-nums text-[#0f1a14] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[#2f8a4a] ${
-                          invalid ? 'border-[#f0b4b0]' : 'border-[#e6e9e5]'
+                        className={`w-full rounded-md border px-2 py-1 text-center font-jetbrains-mono text-xs tabular-nums text-[#0f1a14] outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 ${
+                          invalid
+                            ? 'border-[#f0b4b0] bg-white focus-visible:outline-[#f0b4b0]'
+                            : type === 'alert'
+                              ? 'border-[#f0b4b0] bg-[#fdf5f5] focus-visible:outline-[#b9351f]'
+                              : 'border-[#2f8a4a] bg-[#f4fbf6] focus-visible:outline-[#2f8a4a]'
                         }`}
                         placeholder="–"
                       />
@@ -376,9 +398,10 @@ export function EditThresholdModal({
             <button
               type="submit"
               disabled={isPending || hasInvalid}
-              className="rounded-md bg-[#246e3a] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-[#246e3a] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
             >
-              {isPending ? '保存中...' : '閾値を保存'}
+              <Settings className="h-4 w-4" />
+              {isPending ? '保存中...' : '変更を保存'}
             </button>
           </div>
         </form>
