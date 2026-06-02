@@ -166,7 +166,6 @@ export function EditThresholdModal({
         <Dialog.Content
           className="fixed left-1/2 top-0 z-50 w-full max-w-[760px] -translate-x-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none my-8"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
-          aria-labelledby="edit-threshold-modal-title"
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
@@ -178,7 +177,7 @@ export function EditThresholdModal({
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Dialog.Title id="edit-threshold-modal-title" className="text-[18px] font-semibold tracking-tight text-[#0f1a14]">
+                  <Dialog.Title className="text-[18px] font-semibold tracking-tight text-[#0f1a14]">
                     {plant?.name}
                   </Dialog.Title>
                   {plant && <CultivationBadge type={plant.cultivation_type} />}

@@ -48,7 +48,6 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
-          aria-labelledby="add-zone-modal-title"
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
@@ -60,7 +59,6 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
               </div>
               <div>
                 <Dialog.Title
-                  id="add-zone-modal-title"
                   className="text-[18px] font-semibold tracking-tight text-[#0f1a14]"
                 >
                   ゾーンを追加

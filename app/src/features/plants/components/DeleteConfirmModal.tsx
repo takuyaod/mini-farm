@@ -41,7 +41,6 @@ export function DeleteConfirmModal({ plant, onClose }: DeleteConfirmModalProps) 
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl focus:outline-none"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
-          aria-labelledby="delete-modal-title"
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
@@ -62,7 +61,7 @@ export function DeleteConfirmModal({ plant, onClose }: DeleteConfirmModalProps) 
             <AlertTriangle className="h-6 w-6 text-[#b9351f]" />
           </div>
 
-          <Dialog.Title id="delete-modal-title" className="mb-2 text-[17px] font-semibold tracking-tight text-[#0f1a14]">
+          <Dialog.Title className="mb-2 text-[17px] font-semibold tracking-tight text-[#0f1a14]">
             植物を削除しますか？
           </Dialog.Title>
           <Dialog.Description className="mb-6 text-sm text-[#4b5a52]">

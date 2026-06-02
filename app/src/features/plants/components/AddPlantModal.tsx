@@ -158,13 +158,12 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
         <Dialog.Content
           className="fixed left-1/2 top-0 z-50 w-full max-w-[720px] -translate-x-1/2 overflow-y-auto rounded-xl bg-white shadow-xl p-0 focus:outline-none my-8 max-h-[calc(100vh-4rem)]"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
-          aria-labelledby="add-plant-modal-title"
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
           {/* ヘッダー */}
           <div className="flex items-center justify-between border-b border-[#eef1ed] px-6 py-4">
-            <Dialog.Title id="add-plant-modal-title" className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
+            <Dialog.Title className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
               植物を追加
             </Dialog.Title>
             <Dialog.Close asChild>
