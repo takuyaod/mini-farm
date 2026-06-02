@@ -96,6 +96,7 @@ export function EditThresholdModal({
   useEffect(() => {
     if (state.success) {
       onCloseRef.current()
+      setRows([])
     }
   }, [state.success])
 

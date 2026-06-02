@@ -22,6 +22,7 @@ type Props = {
 export function AddZoneModal({ open, onOpenChange }: Props) {
   const [state, formAction, isPending] = useActionState(createZone, initialState)
   const onOpenChangeRef = useRef(onOpenChange)
+  const formRef = useRef<HTMLFormElement>(null)
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange
   })
@@ -29,11 +30,17 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (state.success) {
       onOpenChangeRef.current(false)
+      formRef.current?.reset()
     }
   }, [state.success])
 
   const handleOpenChange = (next: boolean) => {
-    if (!isPending) onOpenChange(next)
+    if (!isPending) {
+      onOpenChange(next)
+      if (!next) {
+        formRef.current?.reset()
+      }
+    }
   }
 
   return (
@@ -42,7 +49,7 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>ゾーンを追加</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="mt-2 flex flex-col gap-4">
+        <form ref={formRef} action={formAction} className="mt-2 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="zone-name" className="text-sm font-medium text-gray-700">
               ゾーン名 <span className="text-red-500">*</span>

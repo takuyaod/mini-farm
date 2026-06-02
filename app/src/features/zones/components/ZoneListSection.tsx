@@ -98,7 +98,8 @@ export function ZoneListSection({ activeZones, inactiveZones }: Props) {
         </section>
       )}
 
-      <AddZoneModal open={modalOpen} onOpenChange={setModalOpen} />
+      {/* key={modalOpen} でオープンするたびに再マウントし、useActionState の state をリセットする */}
+      <AddZoneModal key={String(modalOpen)} open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   )
 }
