@@ -29,11 +29,14 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (state.success) {
       onOpenChangeRef.current(false)
+      // フォームのリセットは親の key={String(modalOpen)} による再マウントで行われる
     }
   }, [state.success])
 
   const handleOpenChange = (next: boolean) => {
-    if (!isPending) onOpenChange(next)
+    if (!isPending) {
+      onOpenChange(next)
+    }
   }
 
   return (

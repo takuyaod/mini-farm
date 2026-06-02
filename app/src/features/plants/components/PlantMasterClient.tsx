@@ -74,12 +74,16 @@ export function PlantMasterClient({
       )}
 
       {/* モーダル群 */}
+      {/* key={addModalOpen} でオープンするたびに再マウントし、useActionState の state をリセットする */}
       <AddPlantModal
+        key={String(addModalOpen)}
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         sensorTypes={sensorTypes}
       />
+      {/* key={editingPlant?.id} で編集対象が変わるたびに再マウントし、useActionState の state をリセットする */}
       <EditThresholdModal
+        key={editingPlant?.id ?? 'none'}
         plant={editingPlant}
         thresholds={editingPlant ? (thresholdsByPlantId[editingPlant.id] ?? []) : []}
         sensorTypes={sensorTypes}

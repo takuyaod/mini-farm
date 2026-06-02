@@ -29,6 +29,8 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
 
   const days = getDaysFromPlanting(zonePlant.planted_at)
 
+  // 収穫記録成功後は、モーダルを自動で閉じずに成功メッセージと次のアクション（新作付け開始）を表示する。
+  // これは意図的な仕様であり、ユーザーが能動的に操作して閉じる設計にしている。
   if (state.success) {
     return (
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
