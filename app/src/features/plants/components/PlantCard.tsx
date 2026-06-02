@@ -1,6 +1,6 @@
 'use client'
 
-import { Leaf, Pencil, Trash2 } from 'lucide-react'
+import { Leaf, Pencil, Settings2, Trash2 } from 'lucide-react'
 import { ThresholdScale } from './ThresholdScale'
 import { CultivationBadge } from './CultivationBadge'
 import { filterSensorsByCultivation } from '../utils/filterSensorsByCultivation'
@@ -11,6 +11,7 @@ type PlantCardProps = {
   thresholds: PlantThreshold[]
   sensorTypes: SensorTypeMaster[]
   onEditThreshold: (plant: Plant) => void
+  onEditPlant: (plant: Plant) => void
   onDelete: (plant: Plant) => void
 }
 
@@ -19,6 +20,7 @@ export function PlantCard({
   thresholds,
   sensorTypes,
   onEditThreshold,
+  onEditPlant,
   onDelete,
 }: PlantCardProps) {
   const relevantSensorTypes = filterSensorsByCultivation(sensorTypes, plant.cultivation_type)
@@ -91,14 +93,24 @@ export function PlantCard({
           <Pencil className="h-3.5 w-3.5" />
           閾値を編集
         </button>
-        <button
-          type="button"
-          onClick={() => onDelete(plant)}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-[#8a978f] transition-colors hover:bg-[#fceeec] hover:text-[#b9351f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9351f]"
-          aria-label={`${plant.name}を削除`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onEditPlant(plant)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[#8a978f] transition-colors hover:bg-[#eef1ed] hover:text-[#246e3a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
+            aria-label={`${plant.name}を編集`}
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(plant)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[#8a978f] transition-colors hover:bg-[#fceeec] hover:text-[#b9351f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9351f]"
+            aria-label={`${plant.name}を削除`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
