@@ -96,6 +96,8 @@ export function EditThresholdModal({
   useEffect(() => {
     if (state.success) {
       onCloseRef.current()
+      // setRows([]) は再マウント後には意味を持たないが、
+      // onCloseRef.current() が key の変化を伴わない閉じ方をした場合の防御的クリア
       setRows([])
     }
   }, [state.success])
