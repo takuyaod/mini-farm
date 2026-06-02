@@ -279,7 +279,7 @@ CREATE TABLE plants (
 ```sql
 CREATE TABLE plant_thresholds (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
-    plant_id        UUID NOT NULL REFERENCES plants(id) ON DELETE RESTRICT,
+    plant_id        UUID NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
     sensor_type_id  VARCHAR(30) NOT NULL REFERENCES sensor_type_masters(id) ON DELETE RESTRICT,
     optimal_min     FLOAT,    -- 適正値の下限
     optimal_max     FLOAT,    -- 適正値の上限
@@ -567,7 +567,7 @@ Edge Function 内では **Service Role Key** を使って RLS をバイパスす
 | `sensor_type_masters` をFKテーブルにする | 文字列フリーにすると表記揺れが混入し、後で直せない |
 | `sensors` の論理削除（`is_active`） | 物理削除すると過去の `readings` が孤立する |
 | `idempotency_key` on `readings` | Wi-Fi断絶からの復帰時に重複が混入すると過去データが汚染される |
-| `ON DELETE RESTRICT` 統一 | 意図しないカスケード削除を防ぐ |
+| `ON DELETE RESTRICT` 統一（`plant_thresholds` を除く） | 意図しないカスケード削除を防ぐ。`plant_thresholds.plant_id` のみ `ON DELETE CASCADE`（植物削除時に閾値も一緒に削除される挙動が自然なため） |
 | `(device_id, sensor_type_id)` のPartial Unique Index | バックエンドのsensor特定ロジックの前提。後から入れると既存の重複を先に直す必要がある |
 | `alert_type` ENUMに `sensor_fault` を残す | 後から追加するとENUMの変更が必要になる。値だけ確保しておくコストはゼロ |
 
