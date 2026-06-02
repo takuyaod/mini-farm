@@ -9,6 +9,29 @@ type ThresholdScaleProps = {
   isInvalid?: boolean
 }
 
+type LabelConfig = {
+  value: number | null
+  label: string
+  color: string
+}
+
+function buildLabelConfigs(
+  alertMin: number | null,
+  optimalMin: number | null,
+  optimalMax: number | null,
+  alertMax: number | null,
+  isInvalid: boolean,
+): LabelConfig[] {
+  const alertColor = isInvalid ? '#b9351f' : '#b9351f'
+  const optimalColor = isInvalid ? '#b9351f' : '#246e3a'
+  return [
+    { value: alertMin, label: '警下限', color: alertColor },
+    { value: optimalMin, label: '適正下限', color: optimalColor },
+    { value: optimalMax, label: '適正上限', color: optimalColor },
+    { value: alertMax, label: '警上限', color: alertColor },
+  ]
+}
+
 export function ThresholdScale({
   alertMin,
   optimalMin,
@@ -36,28 +59,29 @@ export function ThresholdScale({
     return unit ? `${v}${unit}` : String(v)
   }
 
+  const labelConfigs = buildLabelConfigs(alertMin, optimalMin, optimalMax, alertMax, isInvalid)
+
+  const renderLabels = (configs: LabelConfig[], applyNullColor: boolean) => (
+    <div className="flex justify-between">
+      {configs.map(({ value, label, color }) => (
+        <div key={label} className="flex flex-col items-center">
+          <span
+            className="font-jetbrains-mono text-[10px] tabular-nums"
+            style={{ color: applyNullColor && value === null ? '#8a978f' : color }}
+          >
+            {formatVal(value)}
+          </span>
+          <span className="text-[9px] text-[#8a978f]">{label}</span>
+        </div>
+      ))}
+    </div>
+  )
+
   if (isInvalid) {
     return (
       <div className="flex flex-col gap-1">
         <div className="h-2.5 w-full rounded-full bg-[#f0b4b0]" role="presentation" />
-        <div className="flex justify-between">
-          {[
-            { value: alertMin, label: '警下限', color: '#b9351f' },
-            { value: optimalMin, label: '適正下限', color: '#b9351f' },
-            { value: optimalMax, label: '適正上限', color: '#b9351f' },
-            { value: alertMax, label: '警上限', color: '#b9351f' },
-          ].map(({ value, label, color }) => (
-            <div key={label} className="flex flex-col items-center">
-              <span
-                className="font-jetbrains-mono text-[10px] tabular-nums"
-                style={{ color }}
-              >
-                {formatVal(value)}
-              </span>
-              <span className="text-[9px] text-[#8a978f]">{label}</span>
-            </div>
-          ))}
-        </div>
+        {renderLabels(labelConfigs, false)}
       </div>
     )
   }
@@ -74,10 +98,22 @@ export function ThresholdScale({
 
     // 5セグメント構成: 警告域(赤・端) | 警告余裕(黄) | 適正(緑) | 警告余裕(黄) | 警告域(赤・端)
     // 両端の警告域に固定2%ずつ割り当て、残りを実際の範囲比率で分割する
+    // total === 0（全閾値が同一点）の場合はバー全体を赤単色で表示する
     const endBuffer = 2
     const innerTotal = 100 - endBuffer * 2
-    const leftYellowWidth = total > 0 ? ((optimalMin! - alertMin!) / total) * innerTotal : innerTotal / 3
-    const greenWidth = total > 0 ? ((optimalMax! - optimalMin!) / total) * innerTotal : innerTotal / 3
+
+    if (total === 0) {
+      // すべての閾値が同じ値: 正規バーとして描画できないため単色赤バーで表示
+      return (
+        <div className="flex flex-col gap-1">
+          <div className="h-2.5 w-full rounded-full bg-[#f0b4b0]" role="presentation" />
+          {renderLabels(labelConfigs, false)}
+        </div>
+      )
+    }
+
+    const leftYellowWidth = ((optimalMin! - alertMin!) / total) * innerTotal
+    const greenWidth = ((optimalMax! - optimalMin!) / total) * innerTotal
     const rightYellowWidth = innerTotal - leftYellowWidth - greenWidth
 
     return (
@@ -89,24 +125,7 @@ export function ThresholdScale({
           <div style={{ width: `${Math.max(rightYellowWidth, 0)}%`, backgroundColor: '#f7e6c4' }} />
           <div style={{ width: `${endBuffer}%`, backgroundColor: '#f0b4b0' }} />
         </div>
-        <div className="flex justify-between">
-          {[
-            { value: alertMin, label: '警下限', color: '#b9351f' },
-            { value: optimalMin, label: '適正下限', color: '#246e3a' },
-            { value: optimalMax, label: '適正上限', color: '#246e3a' },
-            { value: alertMax, label: '警上限', color: '#b9351f' },
-          ].map(({ value, label, color }) => (
-            <div key={label} className="flex flex-col items-center">
-              <span
-                className="font-jetbrains-mono text-[10px] tabular-nums"
-                style={{ color }}
-              >
-                {formatVal(value)}
-              </span>
-              <span className="text-[9px] text-[#8a978f]">{label}</span>
-            </div>
-          ))}
-        </div>
+        {renderLabels(labelConfigs, false)}
       </div>
     )
   }
@@ -119,24 +138,7 @@ export function ThresholdScale({
         style={{ background: 'linear-gradient(to right, #f0b4b0, #f7e6c4, #d6ead9, #f7e6c4, #f0b4b0)' }}
         role="presentation"
       />
-      <div className="flex justify-between">
-        {[
-          { value: alertMin, label: '警下限', color: '#b9351f' },
-          { value: optimalMin, label: '適正下限', color: '#246e3a' },
-          { value: optimalMax, label: '適正上限', color: '#246e3a' },
-          { value: alertMax, label: '警上限', color: '#b9351f' },
-        ].map(({ value, label, color }) => (
-          <div key={label} className="flex flex-col items-center">
-            <span
-              className="font-jetbrains-mono text-[10px] tabular-nums"
-              style={{ color: value !== null ? color : '#8a978f' }}
-            >
-              {formatVal(value)}
-            </span>
-            <span className="text-[9px] text-[#8a978f]">{label}</span>
-          </div>
-        ))}
-      </div>
+      {renderLabels(labelConfigs, true)}
     </div>
   )
 }

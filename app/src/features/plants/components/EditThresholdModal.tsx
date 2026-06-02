@@ -199,7 +199,7 @@ export function EditThresholdModal({
               <Leaf className="h-4.5 w-4.5 text-[#2f8a4a]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 id="edit-threshold-modal-title" className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
                   {plant.name}
                 </h2>
@@ -224,8 +224,8 @@ export function EditThresholdModal({
           <input type="hidden" name="plant_id" value={plant.id} />
 
           {/* 凡例バー */}
-          <div className="mb-5 flex items-center justify-between rounded-lg border border-[#eef1ed] bg-[#f7f8f6] px-4 py-3">
-            <div className="flex items-center gap-3">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-y-2 rounded-lg border border-[#eef1ed] bg-[#f7f8f6] px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-[11px] font-medium text-[#8a978f]">範囲の見方</span>
               <span className="flex items-center gap-1">
                 <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: '#2f8a4a' }} />
