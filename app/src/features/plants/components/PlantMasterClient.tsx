@@ -6,6 +6,7 @@ import { PlantCard } from './PlantCard'
 import { AddPlantTile } from './AddPlantTile'
 import { EmptyState } from './EmptyState'
 import { AddPlantModal } from './AddPlantModal'
+import { EditPlantModal } from './EditPlantModal'
 import { EditThresholdModal } from './EditThresholdModal'
 import { DeleteConfirmModal } from './DeleteConfirmModal'
 import type { Plant, PlantThreshold, SensorTypeMaster } from '../types'
@@ -23,6 +24,7 @@ export function PlantMasterClient({
 }: PlantMasterClientProps) {
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null)
+  const [editingPlantInfo, setEditingPlantInfo] = useState<Plant | null>(null)
   const [deletingPlant, setDeletingPlant] = useState<Plant | null>(null)
 
   return (
@@ -66,6 +68,7 @@ export function PlantMasterClient({
               thresholds={thresholdsByPlantId[plant.id] ?? []}
               sensorTypes={sensorTypes}
               onEditThreshold={setEditingPlant}
+              onEditPlant={setEditingPlantInfo}
               onDelete={setDeletingPlant}
             />
           ))}
@@ -80,6 +83,12 @@ export function PlantMasterClient({
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         sensorTypes={sensorTypes}
+      />
+      {/* key={editingPlantInfo?.id} で編集対象が変わるたびに再マウントし、useActionState の state をリセットする */}
+      <EditPlantModal
+        key={editingPlantInfo?.id ?? 'none-edit-plant'}
+        plant={editingPlantInfo}
+        onClose={() => setEditingPlantInfo(null)}
       />
       {/* key={editingPlant?.id} で編集対象が変わるたびに再マウントし、useActionState の state をリセットする */}
       <EditThresholdModal

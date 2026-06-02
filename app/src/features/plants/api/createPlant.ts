@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, getUser } from '@/lib/supabase/server'
+import { validatePlantFields } from './validatePlantFields'
 
 export type CreatePlantState = {
   success: boolean
@@ -15,11 +16,8 @@ export async function createPlant(
   const name = (formData.get('name') as string | null)?.trim() ?? ''
   const cultivation_type = formData.get('cultivation_type') as string | null
 
-  if (!name) return { success: false, error: '植物名を入力してください' }
-  if (name.length > 100) return { success: false, error: '植物名は100文字以内で入力してください' }
-  if (cultivation_type !== 'hydroponic' && cultivation_type !== 'soil' && cultivation_type !== 'both') {
-    return { success: false, error: '栽培方式を選択してください' }
-  }
+  const fieldError = validatePlantFields(name, cultivation_type)
+  if (fieldError) return { success: false, error: fieldError }
 
   const user = await getUser()
   if (!user) return { success: false, error: '認証エラーが発生しました' }
@@ -27,7 +25,10 @@ export async function createPlant(
   const supabase = await createClient()
   const { error } = await supabase.from('plants').insert({ name, cultivation_type, created_by: user.id })
 
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    console.error('[createPlant] insert error:', error)
+    return { success: false, error: '植物の作成に失敗しました' }
+  }
 
   revalidatePath('/settings/plants')
   return { success: true }
