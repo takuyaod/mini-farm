@@ -1,4 +1,3 @@
-import { Header } from '@/components/Header'
 import { AlertBanner } from '@/features/dashboard/components/AlertBanner'
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader'
 import { DashboardRealtimeProvider } from '@/features/dashboard/components/DashboardRealtimeProvider'
@@ -7,7 +6,7 @@ import { ZoneFilter } from '@/features/dashboard/components/ZoneFilter'
 import { getDashboardData } from '@/features/dashboard/api/getDashboardData'
 
 export default async function DashboardPage() {
-  const { zones, totalUnresolvedAlerts, summary } = await getDashboardData()
+  const { zones, summary } = await getDashboardData()
   const today = new Intl.DateTimeFormat('ja-JP', {
     year: 'numeric',
     month: 'long',
@@ -18,7 +17,6 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardRealtimeProvider />
-      <Header alertCount={totalUnresolvedAlerts} />
       <main className="mx-auto max-w-7xl px-4 py-6">
         <DashboardHeader zoneCount={zones.length} today={today} />
         {zones.length > 0 && <AlertBanner zones={zones} />}

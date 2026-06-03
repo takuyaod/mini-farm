@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { AlertTriangle, ChevronLeft, Settings, Share2 } from 'lucide-react'
-import { Header } from '@/components/Header'
 import { getZoneDetail } from '@/features/zones/api/getZoneDetail'
 import { APP_NAME, APP_VERSION } from '@/constants'
 import { ZoneInfoCard } from '@/features/zones/components/ZoneInfoCard'
@@ -21,13 +20,11 @@ export default async function ZoneDetailPage({
 
   const { zone, devices, sensors, unresolvedAlerts, currentPlant, isOffline, latestLastSeen } = data
 
-  const totalUnresolvedAlerts = unresolvedAlerts.length
   const sensorIds = sensors.map((s) => s.id)
 
   return (
     <div className="min-h-screen bg-surface-bg">
       <ZoneRealtimeProvider sensorIds={sensorIds} channelKey={id} />
-      <Header alertCount={totalUnresolvedAlerts} />
       <main className="mx-auto max-w-[1400px] px-8 py-7">
         {/* ページヘッダー: パンくず + 共有/設定 */}
         <div className="flex items-center justify-between">
