@@ -164,13 +164,13 @@ export function EditThresholdModal({
           style={{ animation: 'overlayIn 0.16s ease-out' }}
         />
         <Dialog.Content
-          className="fixed left-1/2 top-0 z-50 w-full max-w-[760px] -translate-x-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none my-8"
+          className="fixed left-1/2 top-0 z-50 w-full max-w-[760px] -translate-x-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none my-8 max-h-[calc(100vh-4rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#dfe3dd_transparent]"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
           {/* ヘッダー */}
-          <div className="flex items-center justify-between border-b border-[#eef1ed] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[#eef1ed] px-6 py-4 sticky top-0 bg-white z-10 rounded-t-2xl">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#ecf5ee] to-[#d6ead9]">
                 <Leaf className="h-[19px] w-[19px] text-[#246e3a]" strokeWidth={2} />
@@ -199,7 +199,7 @@ export function EditThresholdModal({
             </Dialog.Close>
           </div>
 
-          <div className="overflow-y-auto max-h-[64vh] [scrollbar-width:thin] [scrollbar-color:#dfe3dd_transparent]">
+          <div>
             <form id="edit-threshold-form" action={formAction} className="px-6 pt-5 pb-0">
               <input type="hidden" name="plant_id" value={plant?.id} />
 
@@ -357,7 +357,7 @@ export function EditThresholdModal({
           </div>
 
           {/* フッター */}
-          <div className="flex items-center justify-between gap-2 border-t border-[#eef1ed] px-6 py-4">
+          <div className="flex items-center justify-between gap-2 border-t border-[#eef1ed] px-6 py-4 sticky bottom-0 bg-white z-10 rounded-b-2xl">
             <div>
               {hasInvalid && (
                 <span className="text-[11.5px] text-[#8a978f]">値の順序を確認してください</span>
