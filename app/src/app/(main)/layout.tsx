@@ -1,13 +1,19 @@
 import { Suspense } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { Header } from '@/components/Header'
 import { getUnresolvedAlertCount } from '@/features/alerts/api/getUnresolvedAlertCount'
+import { requireUser } from '@/lib/supabase/server'
 
-async function HeaderWithAlertCount() {
+export const dynamic = 'force-dynamic'
+
+async function HeaderWithAlertCount({ user }: { user: User }) {
   const alertCount = await getUnresolvedAlertCount()
-  return <Header alertCount={alertCount} />
+  return <Header alertCount={alertCount} user={user} />
 }
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireUser()
+
   return (
     <>
       {/*
@@ -17,8 +23,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         alertCount を省略（undefined）することでバッジを非表示にし、
         不正な件数表示を防ぐ。
       */}
-      <Suspense fallback={<Header />}>
-        <HeaderWithAlertCount />
+      <Suspense fallback={<Header user={user} />}>
+        <HeaderWithAlertCount user={user} />
       </Suspense>
       {children}
     </>
