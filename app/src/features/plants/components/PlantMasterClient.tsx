@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Leaf, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { PlantCard } from './PlantCard'
 import { AddPlantTile } from './AddPlantTile'
 import { EmptyState } from './EmptyState'
@@ -46,14 +47,15 @@ export function PlantMasterClient({
             </p>
           </div>
         </div>
-        <button
+        <Button
           type="button"
+          variant="green"
+          size="default"
           onClick={() => setAddModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#246e3a] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
         >
           <Plus className="h-4 w-4" />
           植物を追加
-        </button>
+        </Button>
       </div>
 
       {/* カードグリッド / 空状態 */}

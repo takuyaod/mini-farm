@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Button } from '@/components/ui/button'
 import { deletePlant } from '../api/deletePlant'
 import type { DeletePlantState } from '../api/deletePlant'
 import type { Plant } from '../types'
@@ -76,21 +77,25 @@ export function DeleteConfirmModal({ plant, onClose }: DeleteConfirmModalProps) 
 
           <form action={formAction} className="flex justify-end gap-3">
             <input type="hidden" name="plant_id" value={plant?.id} />
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleClose}
               disabled={isPending}
-              className="rounded-md border border-[#e6e9e5] bg-white px-4 py-2 text-sm font-medium text-[#4b5a52] transition-colors hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
+              className="focus-visible:ring-green-400"
             >
               キャンセル
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="destructive"
+              size="sm"
               disabled={isPending}
-              className="rounded-md bg-[#b9351f] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#9a2b18] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9351f] disabled:opacity-50"
+              className="bg-[#b9351f] hover:bg-[#9a2b18] focus-visible:ring-red-400"
             >
               {isPending ? '削除中...' : '削除する'}
-            </button>
+            </Button>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
