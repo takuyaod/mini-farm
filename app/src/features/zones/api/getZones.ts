@@ -37,7 +37,7 @@ export async function getZones(): Promise<ZonesData> {
   ])
 
   const devices = devicesRes.data ?? []
-  const rawZonePlants = (zonePlantsRes.data ?? []) as ZonePlantRow[]
+  const rawZonePlants = (zonePlantsRes.data ?? []) as unknown as ZonePlantRow[]
 
   const items: ZoneListItem[] = zones.map((zone: Zone) => {
     const deviceCount = devices.filter((d) => d.zone_id === zone.id).length

@@ -1,17 +1,16 @@
 import Link from 'next/link'
 import { Bell, Sprout } from 'lucide-react'
-import { getClaims } from '@/lib/supabase/server'
+import type { User } from '@supabase/supabase-js'
 import { UserMenu } from './UserMenu'
 import { RealtimeIndicator } from './RealtimeIndicator'
 import { HeaderNav } from './HeaderNav'
 
 type Props = {
   alertCount?: number
+  user: User
 }
 
-export async function Header({ alertCount = 0 }: Props) {
-  const user = await getClaims()
-
+export function Header({ alertCount = 0, user }: Props) {
   return (
     <header className="sticky top-0 z-30 h-14 border-b bg-white/85 px-4 backdrop-blur-md">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4">

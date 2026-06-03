@@ -5,11 +5,14 @@ import type { AlertTypeFilter, AlertWithContext, AlertsResult, AlertSummary, Get
 
 const PAGE_SIZE = 20
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyTypeFilter<T extends { eq: (...args: any[]) => T }>(
-  q: T,
+type AlertQuery = {
+  eq: (column: string, value: string) => AlertQuery
+}
+
+function applyTypeFilter(
+  q: AlertQuery,
   typeFilter: AlertTypeFilter | undefined
-): T {
+): AlertQuery {
   if (!typeFilter || typeFilter === 'all') return q
   if (typeFilter === 'sensor_fault') return q.eq('alert_type', 'sensor_fault')
   if (typeFilter === 'high') return q.eq('alert_type', 'threshold_breach').eq('breach_direction', 'high')
@@ -31,6 +34,19 @@ type RawAlert = {
     sensor_type_masters: { id: string; label: string; unit: string | null }
     devices: { id: string; zone_id: string; zones: { id: string; name: string } }
   }
+}
+
+type ZonePlantWithPlant = {
+  zone_id: string
+  plant_id: string
+  plants: { name: string } | null
+}
+
+type ThresholdRow = {
+  plant_id: string
+  sensor_type_id: string
+  alert_min: number | null
+  alert_max: number | null
 }
 
 export async function getAlertSummary(): Promise<AlertSummary> {
@@ -123,13 +139,15 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
   }
 
   const buildBase = () => {
-    let q = supabase.from('alerts').select('id', { count: 'exact', head: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q: any = supabase.from('alerts').select('id', { count: 'exact', head: true })
     q = tab === 'unresolved' ? q.is('resolved_at', null) : q.not('resolved_at', 'is', null)
     if (sensorIdFilter) q = q.in('sensor_id', sensorIdFilter)
-    return applyTypeFilter(q, typeFilter)
+    return applyTypeFilter(q, typeFilter) as typeof q
   }
 
-  let alertsQuery = supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let alertsQuery: any = supabase
     .from('alerts')
     .select(
       `*, sensors (id, label, sensor_type_id, sensor_type_masters (id, label, unit), devices (id, zone_id, zones (id, name)))`
@@ -139,7 +157,7 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
       ? alertsQuery.is('resolved_at', null)
       : alertsQuery.not('resolved_at', 'is', null)
   if (sensorIdFilter) alertsQuery = alertsQuery.in('sensor_id', sensorIdFilter)
-  alertsQuery = applyTypeFilter(alertsQuery, typeFilter)
+  alertsQuery = applyTypeFilter(alertsQuery, typeFilter) as typeof alertsQuery
   if (cursor) {
     alertsQuery = alertsQuery.or(
       `started_at.lt.${cursor.started_at},and(started_at.eq.${cursor.started_at},id.lt.${cursor.id})`
@@ -163,7 +181,8 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
           .is('harvested_at', null)
       : { data: [] }
 
-  const plantIds = [...new Set((zonePlants ?? []).map((zp: { plant_id: string }) => zp.plant_id))]
+  const rawZonePlants = (zonePlants ?? []) as unknown as ZonePlantWithPlant[]
+  const plantIds = [...new Set(rawZonePlants.map((zp) => zp.plant_id))]
   const { data: thresholds } =
     plantIds.length > 0
       ? await supabase
@@ -174,12 +193,10 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
 
   const plantNameByZoneId = new Map<string, string>()
   const plantIdByZoneId = new Map<string, string>()
-  for (const zp of (zonePlants ?? []) as unknown as {
-    zone_id: string
-    plant_id: string
-    plants: { name: string }
-  }[]) {
-    plantNameByZoneId.set(zp.zone_id, zp.plants.name)
+  for (const zp of rawZonePlants) {
+    if (zp.plants) {
+      plantNameByZoneId.set(zp.zone_id, zp.plants.name)
+    }
     plantIdByZoneId.set(zp.zone_id, zp.plant_id)
   }
 
@@ -187,12 +204,7 @@ export async function getAlerts({ tab, zoneId, typeFilter, cursor }: GetAlertsPa
     string,
     { alert_min: number | null; alert_max: number | null }
   >()
-  for (const t of (thresholds ?? []) as {
-    plant_id: string
-    sensor_type_id: string
-    alert_min: number | null
-    alert_max: number | null
-  }[]) {
+  for (const t of (thresholds ?? []) as unknown as ThresholdRow[]) {
     thresholdMap.set(`${t.plant_id}:${t.sensor_type_id}`, t)
   }
 

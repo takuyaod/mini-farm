@@ -2,8 +2,6 @@
 
 import Image from 'next/image'
 import { LogOut } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import {
   DropdownMenu,
@@ -19,16 +17,16 @@ type Props = {
 }
 
 export function UserMenu({ user }: Props) {
-  const router = useRouter()
-  const supabase = createClient()
-
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
   const fullName = user?.user_metadata?.full_name as string | undefined
   const initial = (fullName ?? user?.email ?? 'U').charAt(0).toUpperCase()
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      await fetch('/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.replace('/login')
+    }
   }
 
   return (

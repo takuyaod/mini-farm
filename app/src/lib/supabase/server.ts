@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { SUPABASE_AUTH_STORAGE_KEY, type CookieToSet } from './constants'
 
 export async function createClient() {
@@ -59,9 +60,9 @@ export async function createAuthClient() {
 export async function getClaims() {
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return session?.user ?? null
+    data,
+  } = await supabase.auth.getClaims()
+  return data?.claims ?? null
 }
 
 /** Server-side session validation — makes an API call. Use before mutations. */
@@ -70,5 +71,12 @@ export async function getUser() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  return user
+}
+
+/** Require a verified user before rendering protected pages/layouts. */
+export async function requireUser() {
+  const user = await getUser()
+  if (!user) redirect('/login')
   return user
 }

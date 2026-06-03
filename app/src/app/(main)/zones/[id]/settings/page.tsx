@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { createClient, getClaims } from '@/lib/supabase/server'
+import { createClient, requireUser } from '@/lib/supabase/server'
 import { ZoneSettingsName } from '@/features/zones/components/ZoneSettingsName'
 import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant'
 import { DeviceManagementSection } from '@/features/zones/components/ZoneSettingsDevice'
@@ -28,8 +28,7 @@ export default async function ZoneSettingsPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const user = await getClaims()
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const supabase = await createClient()
 

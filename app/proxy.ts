@@ -5,6 +5,14 @@ import { SUPABASE_AUTH_STORAGE_KEY, type CookieToSet } from '@/lib/supabase/cons
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  function redirectWithAuthCookies(url: URL) {
+    const redirectResponse = NextResponse.redirect(url)
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+    return redirectResponse
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -29,26 +37,27 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Local JWT validation (no API call) — fast enough for every request.
+  // Local JWT validation when possible, falling back to Auth server validation.
   // Cannot use getClaims() from lib/supabase/server here because that helper
   // depends on cookies() from next/headers, which is unavailable in middleware context.
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data,
+  } = await supabase.auth.getClaims()
+  const claims = data?.claims ?? null
 
   const pathname = request.nextUrl.pathname
   const isPublicPath =
     pathname === '/login' || pathname.startsWith('/auth/')
 
-  if (!session && !isPublicPath) {
+  if (!claims && !isPublicPath) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
-    return NextResponse.redirect(loginUrl)
+    return redirectWithAuthCookies(loginUrl)
   }
 
-  if (session && pathname === '/login') {
+  if (claims && pathname === '/login') {
     const homeUrl = new URL('/', request.url)
-    return NextResponse.redirect(homeUrl)
+    return redirectWithAuthCookies(homeUrl)
   }
 
   return response
