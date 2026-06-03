@@ -90,14 +90,15 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
         >
           {/* ヘッダー */}
-          <div className="flex items-center justify-between border-b border-[#eef1ed] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[#eef1ed] px-6 py-4 sticky top-0 bg-white z-10 rounded-t-2xl">
             <Dialog.Title className="text-[17px] font-semibold tracking-tight text-[#0f1a14]">
               収穫を記録する
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
+                disabled={isPending}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
                 aria-label="閉じる"
               >
                 <X className="h-4 w-4" />
@@ -114,7 +115,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
               <p>栽培日数: {days} 日</p>
             </div>
 
-            <form action={formAction} className="space-y-4">
+            <form id="harvest-form" action={formAction} className="space-y-4">
               <input type="hidden" name="zone_plant_id" value={zonePlant.id} />
               <input type="hidden" name="zone_id" value={zoneId} />
 
@@ -158,24 +159,27 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
                 </p>
               )}
 
-              <div className="flex justify-end gap-2 border-t border-[#eef1ed] pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isPending}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  type="submit"
-                  variant="green"
-                  disabled={isPending}
-                >
-                  {isPending ? '記録中...' : '収穫を確定'}
-                </Button>
-              </div>
             </form>
+          </div>
+
+          {/* フッター */}
+          <div className="flex justify-end gap-2 border-t border-[#eef1ed] px-6 py-4 sticky bottom-0 bg-white z-10 rounded-b-2xl">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isPending}
+            >
+              キャンセル
+            </Button>
+            <Button
+              type="submit"
+              form="harvest-form"
+              variant="green"
+              disabled={isPending}
+            >
+              {isPending ? '記録中...' : '収穫を確定'}
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
