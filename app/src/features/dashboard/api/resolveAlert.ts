@@ -1,7 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { createClient, getUser } from '@/lib/supabase/server'
+import { ALERT_COUNT_TAG } from '@/features/alerts/api/getUnresolvedAlertCount'
 
 export async function resolveAlert(alertId: string) {
   const user = await getUser()
@@ -15,5 +16,6 @@ export async function resolveAlert(alertId: string) {
 
   if (error) throw new Error(error.message)
 
+  revalidateTag(ALERT_COUNT_TAG, 'max')
   revalidatePath('/')
 }

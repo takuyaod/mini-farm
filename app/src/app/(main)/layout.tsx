@@ -10,7 +10,14 @@ async function HeaderWithAlertCount() {
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Suspense fallback={<Header alertCount={0} />}>
+      {/*
+        unstable_cache でキャッシュ済みのカウントを返すため、
+        通常はキャッシュヒットによりフォールバックが表示されることはない。
+        初回レンダリング時のみフォールバックが表示される可能性があるが、
+        alertCount を省略（undefined）することでバッジを非表示にし、
+        不正な件数表示を防ぐ。
+      */}
+      <Suspense fallback={<Header />}>
         <HeaderWithAlertCount />
       </Suspense>
       {children}
