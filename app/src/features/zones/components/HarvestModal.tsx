@@ -47,7 +47,6 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  onClick={onClose}
                   className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
                   aria-label="閉じる"
                 >
@@ -85,7 +84,7 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
           style={{ animation: 'overlayIn 0.16s ease-out' }}
         />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none"
+          className="fixed left-1/2 top-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-[0_20px_60px_rgba(15,26,20,.25)] p-0 focus:outline-none max-h-[calc(100vh-4rem)] overflow-y-auto"
           style={{ animation: 'modalIn 0.2s cubic-bezier(0.16,1,0.3,1)' }}
           onPointerDownOutside={(e) => { if (isPending) e.preventDefault() }}
           onEscapeKeyDown={(e) => { if (isPending) e.preventDefault() }}
@@ -98,7 +97,6 @@ export function HarvestModal({ open, onClose, zonePlant, zoneId }: Props) {
             <Dialog.Close asChild>
               <button
                 type="button"
-                onClick={onClose}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-[#8a978f] hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
                 aria-label="閉じる"
               >
