@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { Header } from '@/components/Header'
 import { createClient, getClaims } from '@/lib/supabase/server'
 import { ZoneSettingsName } from '@/features/zones/components/ZoneSettingsName'
 import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant'
@@ -59,7 +58,6 @@ export default async function ZoneSettingsPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-6 flex items-center gap-2">
           <Link

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ChevronRight, Search, Download, BellOff } from 'lucide-react'
-import { Header } from '@/components/Header'
 import { createClient } from '@/lib/supabase/server'
 import { getAlerts, getAlertSummary } from '@/features/alerts/api/getAlerts'
 import { AlertFilters } from '@/features/alerts/components/AlertFilters'
@@ -24,7 +23,6 @@ export default async function AlertsPage() {
 
   return (
     <div className="min-h-screen bg-surface-bg">
-      <Header alertCount={initialData.totalCount} />
       <main className="mx-auto max-w-[1400px] px-8 py-7">
         {/* ページヘッダー行 */}
         <div className="mb-6 flex items-center justify-between">
