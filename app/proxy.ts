@@ -42,6 +42,7 @@ export async function proxy(request: NextRequest) {
 
   if (!session && !isPublicPath) {
     const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
   }
 

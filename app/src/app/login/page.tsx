@@ -5,19 +5,23 @@ import { createAuthClient } from '@/lib/supabase/server'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }) {
-  const { error } = await searchParams
+  const { error, next } = await searchParams
 
   async function signInWithGitHub() {
     'use server'
     const supabase = await createAuthClient()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const rawNext = next ?? '/'
+    // Prevent open redirect: only allow relative paths (no protocol-relative URLs)
+    const safeNext =
+      rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
 
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(safeNext)}`,
       },
     })
 
