@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Button } from '@/components/ui/button'
 import { createZone } from '@/features/dashboard/api/createZone'
 import type { CreateZoneState } from '@/features/dashboard/api/createZone'
 
@@ -136,22 +137,25 @@ export function AddZoneModal({ open, onOpenChange }: Props) {
 
             {/* フッターボタン */}
             <div className="flex justify-end gap-2 border-t border-[#eef1ed] pt-4">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleClose}
                 disabled={isPending}
-                className="rounded-lg px-3 py-1.5 text-[13px] font-medium text-[#4b5a52] transition-colors hover:bg-[#eef1ed] hover:text-[#0f1a14] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
+                className="text-[#4b5a52] hover:bg-[#eef1ed] hover:text-[#0f1a14] focus-visible:ring-green-400"
               >
                 キャンセル
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="green"
+                size="sm"
                 disabled={isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#246e3a] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
               >
                 <Plus className="h-[14px] w-[14px]" />
                 {isPending ? '作成中...' : '作成'}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog.Content>

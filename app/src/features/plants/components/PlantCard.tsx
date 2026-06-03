@@ -1,6 +1,7 @@
 'use client'
 
 import { Leaf, Pencil, Settings2, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ThresholdScale } from './ThresholdScale'
 import { CultivationBadge } from './CultivationBadge'
 import { filterSensorsByCultivation } from '../utils/filterSensorsByCultivation'
@@ -85,31 +86,37 @@ export function PlantCard({
 
       {/* カードフッター */}
       <div className="flex items-center justify-between border-t border-[#eef1ed] px-4 py-3">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => onEditThreshold(plant)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[#e6e9e5] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5a52] transition-colors hover:border-[#246e3a] hover:text-[#246e3a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
+          className="border-[#e6e9e5] text-[#4b5a52] hover:border-[#246e3a] hover:text-[#246e3a] focus-visible:ring-green-400"
         >
           <Pencil className="h-3.5 w-3.5" />
           閾値を編集
-        </button>
+        </Button>
         <div className="flex items-center gap-1">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => onEditPlant(plant)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-[#8a978f] transition-colors hover:bg-[#eef1ed] hover:text-[#246e3a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a]"
             aria-label={`${plant.name}を編集`}
+            className="text-[#8a978f] hover:bg-[#eef1ed] hover:text-[#246e3a] focus-visible:ring-green-400"
           >
             <Settings2 className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => onDelete(plant)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-[#8a978f] transition-colors hover:bg-[#fceeec] hover:text-[#b9351f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b9351f]"
             aria-label={`${plant.name}を削除`}
+            className="text-[#8a978f] hover:bg-[#fceeec] hover:text-[#b9351f] focus-visible:ring-red-400"
           >
             <Trash2 className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

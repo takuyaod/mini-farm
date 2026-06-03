@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Plus, Trash2, X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Button } from '@/components/ui/button'
 import { createPlant } from '../api/createPlant'
 import type { CreatePlantState } from '../api/createPlant'
 import type { CultivationType, SensorTypeMaster } from '../types'
@@ -361,21 +362,24 @@ export function AddPlantModal({ open, onClose, sensorTypes }: AddPlantModalProps
 
             {/* フッターボタン */}
             <div className="flex justify-end gap-3 border-t border-[#eef1ed] pt-4">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={handleClose}
                 disabled={isPending}
-                className="rounded-md border border-[#e6e9e5] bg-white px-4 py-2 text-sm font-medium text-[#4b5a52] transition-colors hover:bg-[#f7f8f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
+                className="focus-visible:ring-green-400"
               >
                 キャンセル
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="green"
+                size="sm"
                 disabled={isPending || nameValue.trim() === '' || hasInvalid}
-                className="rounded-md bg-[#246e3a] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
               >
                 {isPending ? '追加中...' : '植物を追加'}
-              </button>
+              </Button>
             </div>
           </form>
         </Dialog.Content>

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Leaf, Plus, Settings, Trash2, X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { Button } from '@/components/ui/button'
 import { upsertThresholds } from '../api/upsertThresholds'
 import type { UpsertThresholdsState } from '../api/upsertThresholds'
 import { ThresholdScale } from './ThresholdScale'
@@ -364,23 +365,26 @@ export function EditThresholdModal({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleClose}
                 disabled={isPending}
-                className="rounded-lg px-3 py-1.5 text-[13px] font-medium text-[#4b5a52] transition-colors hover:bg-[#eef1ed] hover:text-[#0f1a14] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
+                className="text-[#4b5a52] hover:bg-[#eef1ed] hover:text-[#0f1a14] focus-visible:ring-green-400"
               >
                 キャンセル
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="edit-threshold-form"
+                variant="green"
+                size="sm"
                 disabled={isPending || hasInvalid}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#246e3a] px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#1c5a2f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f8a4a] disabled:opacity-50"
               >
                 <Settings className="h-[14px] w-[14px]" />
                 {isPending ? '保存中...' : '変更を保存'}
-              </button>
+              </Button>
             </div>
           </div>
         </Dialog.Content>

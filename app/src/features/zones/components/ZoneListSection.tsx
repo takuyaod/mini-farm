@@ -60,8 +60,8 @@ export function ZoneListSection({ activeZones, inactiveZones }: Props) {
               ({activeZones.length})
             </span>
           </h2>
-          <Button variant="green" size="sm" onClick={() => setModalOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
+          <Button variant="green" size="default" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4" />
             ゾーンを追加
           </Button>
         </div>
