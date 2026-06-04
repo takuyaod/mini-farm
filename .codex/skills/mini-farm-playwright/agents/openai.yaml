@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mini Farm Playwright"
+  short_description: "Verify mini-farm UI with Playwright CLI"
+  default_prompt: "Use $mini-farm-playwright to verify the requested mini-farm app flow with Playwright CLI."
