@@ -52,7 +52,12 @@ export default async function LoginPage({
             GitHub でログイン
           </button>
         </form>
-        {error && (
+        {error === 'unauthorized' && (
+          <p className="text-center text-sm text-red-600">
+            このGitHubアカウントでのログインは許可されていません。管理者に連絡してください。
+          </p>
+        )}
+        {error && error !== 'unauthorized' && (
           <p className="text-center text-sm text-red-600">
             ログインに失敗しました。もう一度お試しください。
           </p>

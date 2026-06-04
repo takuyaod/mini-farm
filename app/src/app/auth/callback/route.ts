@@ -35,6 +35,33 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // 許可リスト判定
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData?.user
+      const email = user?.email ?? ''
+      const githubUsername = (user?.user_metadata?.user_name as string) ?? ''
+
+      const allowedEmailsRaw = process.env.ALLOWED_EMAILS ?? ''
+      const allowedUsernamesRaw = process.env.ALLOWED_GITHUB_USERNAMES ?? ''
+
+      // ALLOWED_EMAILS が未設定の場合は全員拒否
+      if (!allowedEmailsRaw.trim()) {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+      }
+
+      const allowedEmails = allowedEmailsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+      const allowedUsernames = allowedUsernamesRaw.split(',').map((s) => s.trim()).filter(Boolean)
+
+      const isAllowed =
+        (email && allowedEmails.includes(email)) ||
+        (githubUsername && allowedUsernames.includes(githubUsername))
+
+      if (!isAllowed) {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(new URL('/login?error=unauthorized', request.url))
+      }
+
       return NextResponse.redirect(new URL(next, request.url))
     }
 
