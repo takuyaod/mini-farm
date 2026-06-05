@@ -1,8 +1,8 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { OFFLINE_THRESHOLD_MIN } from '@/constants'
-import type { SensorWithAlert, ZoneDetailData } from '../types'
-import type { Alert, Device, PlantThreshold, Reading, Sensor, Zone, ZonePlant } from '@/features/dashboard/types'
+import type { SensorWithAlert, ZoneDetailData, HarvestedZonePlant } from '../types'
+import type { Alert, Device, PlantThreshold, Reading, Sensor, Zone, ZonePlant } from '@/types'
 
 export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | null> {
   const supabase = await createClient()
@@ -31,12 +31,17 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
       .select('*, plants(*)')
       .eq('zone_id', zoneId)
       .not('harvested_at', 'is', null)
-      .order('planted_at', { ascending: false }),
+      .order('planted_at', { ascending: false })
+      .limit(50),
   ])
 
   const devices: Device[] = devicesRes.data ?? []
   const currentPlant = zonePlantRes.data ?? null
-  const pastPlants: ZonePlant[] = (pastPlantsRes.data ?? []) as ZonePlant[]
+
+  if (pastPlantsRes.error) {
+    console.error('Failed to fetch past plants:', pastPlantsRes.error)
+  }
+  const pastPlants: HarvestedZonePlant[] = (pastPlantsRes.data ?? []) as HarvestedZonePlant[]
 
   const allActiveSensors: Sensor[] = devices.flatMap((d: Device) =>
     d.sensors.filter((s: Sensor) => s.is_active)

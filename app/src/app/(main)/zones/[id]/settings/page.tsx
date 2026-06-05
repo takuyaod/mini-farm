@@ -8,7 +8,7 @@ import { ZoneSettingsPlant } from '@/features/zones/components/ZoneSettingsPlant
 import { DeviceManagementSection } from '@/features/zones/components/ZoneSettingsDevice'
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
 import { ZoneSettingsDanger } from '@/features/zones/components/ZoneSettingsDanger'
-import type { Device, Plant, Sensor } from '@/features/dashboard/types'
+import type { Device, Plant, Sensor } from '@/types'
 
 export async function generateMetadata({
   params,

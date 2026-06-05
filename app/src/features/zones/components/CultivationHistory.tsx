@@ -1,8 +1,8 @@
 import { calcCultivationDays, formatPlantingDate } from '../utils'
-import type { ZonePlant } from '../types'
+import type { HarvestedZonePlant } from '../types'
 
 type Props = {
-  pastPlants: ZonePlant[]
+  pastPlants: HarvestedZonePlant[]
 }
 
 export function CultivationHistory({ pastPlants }: Props) {
@@ -34,7 +34,7 @@ export function CultivationHistory({ pastPlants }: Props) {
             </thead>
             <tbody className="divide-y divide-[#eef1ed]">
               {pastPlants.map((entry) => {
-                const days = calcCultivationDays(entry.planted_at, entry.harvested_at!)
+                const days = calcCultivationDays(entry.planted_at, entry.harvested_at)
                 return (
                   <tr key={entry.id} className="hover:bg-[#f7f8f6]">
                     <td className="px-6 py-3 font-medium text-content-primary">
@@ -44,7 +44,7 @@ export function CultivationHistory({ pastPlants }: Props) {
                       {formatPlantingDate(entry.planted_at)}
                     </td>
                     <td className="px-4 py-3 tabular-nums text-content-secondary">
-                      {formatPlantingDate(entry.harvested_at!)}
+                      {formatPlantingDate(entry.harvested_at)}
                     </td>
                     <td className="px-4 py-3 tabular-nums text-content-secondary">
                       {days} 日

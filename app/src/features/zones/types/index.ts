@@ -3,13 +3,13 @@ import type {
   Device,
   Plant,
   PlantThreshold,
+  Reading,
   Sensor,
-  SensorWithReading,
   Zone,
   ZonePlant,
-} from '@/features/dashboard/types'
+} from '@/types'
 
-export type { Alert, Device, Plant, PlantThreshold, Sensor, SensorWithReading, Zone, ZonePlant }
+export type { Alert, Device, Plant, PlantThreshold, Reading, Sensor, Zone, ZonePlant }
 
 export type ZoneListItem = {
   zone: Zone
@@ -17,8 +17,16 @@ export type ZoneListItem = {
   currentPlantName: string | null
 }
 
-export type SensorWithAlert = SensorWithReading & {
+export type SensorWithAlert = Sensor & {
+  latestReading: Reading | null
+  threshold: PlantThreshold | null
+  hasAlert: boolean
   alertBreachDirection: 'high' | 'low' | null
+}
+
+/** harvested_at が確定している収穫済みレコード */
+export type HarvestedZonePlant = Omit<ZonePlant, 'harvested_at'> & {
+  harvested_at: string
 }
 
 export type ZoneDetailData = {
@@ -27,7 +35,7 @@ export type ZoneDetailData = {
   sensors: SensorWithAlert[]
   unresolvedAlerts: Alert[]
   currentPlant: ZonePlant | null
-  pastPlants: ZonePlant[]
+  pastPlants: HarvestedZonePlant[]
   isOffline: boolean
   latestLastSeen: string | null
 }

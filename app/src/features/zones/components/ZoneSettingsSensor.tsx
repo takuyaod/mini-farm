@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { decommissionSensor, type DecommissionSensorState } from '../api/decommissionSensor'
-import type { Sensor } from '@/features/dashboard/types'
+import type { Sensor } from '@/types'
 
 type SensorRowProps = {
   sensor: Sensor
