@@ -43,6 +43,8 @@ export type ZonePlant = {
   plant_id: string
   planted_at: string
   harvested_at: string | null
+  harvest_weight_g: number | null
+  notes: string | null
   plants: Plant
 }
 

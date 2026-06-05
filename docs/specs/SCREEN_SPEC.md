@@ -352,6 +352,24 @@ ORDER BY recorded_at ASC;
 - デバイスに紐づくセンサー種別をピル表示
 - 将来デバイスが複数になった場合は行が増えるだけ
 
+### 栽培履歴セクション
+
+- デバイス欄の下に表示
+- データソース：`zone_plants` テーブルの `harvested_at IS NOT NULL` のレコードを `planted_at` 降順で取得
+- テーブル形式で以下の項目を表示
+
+| カラム | ソース・仕様 |
+|---|---|
+| 植物名 | `plants.name` |
+| 植付日 | `zone_plants.planted_at`（`ja-JP` 形式） |
+| 収穫日 | `zone_plants.harvested_at`（`ja-JP` 形式） |
+| 栽培日数 | `harvested_at - planted_at` を日単位で計算 |
+| 収穫量 | `zone_plants.harvest_weight_g`（g 単位）。NULL の場合は「記録なし」 |
+| メモ | `zone_plants.notes`。NULL の場合は「—」 |
+
+- 履歴が 0 件の場合は「過去の収穫記録がありません」のエンプティステートを表示
+- Server Component でデータ取得し、`CultivationHistory` コンポーネントに props として渡す
+
 ---
 
 ## モーダル A：収穫

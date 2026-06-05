@@ -27,6 +27,7 @@ export type ZoneDetailData = {
   sensors: SensorWithAlert[]
   unresolvedAlerts: Alert[]
   currentPlant: ZonePlant | null
+  pastPlants: ZonePlant[]
   isOffline: boolean
   latestLastSeen: string | null
 }

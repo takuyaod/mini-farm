@@ -15,7 +15,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
 
   if (zoneError || !zone) return null
 
-  const [devicesRes, zonePlantRes] = await Promise.all([
+  const [devicesRes, zonePlantRes, pastPlantsRes] = await Promise.all([
     supabase
       .from('devices')
       .select('*, sensors(*, sensor_type_masters(*))')
@@ -26,10 +26,17 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
       .eq('zone_id', zoneId)
       .is('harvested_at', null)
       .maybeSingle(),
+    supabase
+      .from('zone_plants')
+      .select('*, plants(*)')
+      .eq('zone_id', zoneId)
+      .not('harvested_at', 'is', null)
+      .order('planted_at', { ascending: false }),
   ])
 
   const devices: Device[] = devicesRes.data ?? []
   const currentPlant = zonePlantRes.data ?? null
+  const pastPlants: ZonePlant[] = (pastPlantsRes.data ?? []) as ZonePlant[]
 
   const allActiveSensors: Sensor[] = devices.flatMap((d: Device) =>
     d.sensors.filter((s: Sensor) => s.is_active)
@@ -110,6 +117,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
     sensors,
     unresolvedAlerts: allAlerts,
     currentPlant,
+    pastPlants,
     isOffline,
     latestLastSeen,
   }
