@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { addDevice, type AddDeviceState } from '../api/addDevice'
 import { reissueApiKey, type ReissueApiKeyState } from '../api/reissueApiKey'
 import { updateDeviceName, type UpdateDeviceNameState } from '../api/updateDeviceName'
-import type { Device } from '@/features/dashboard/types'
+import type { Device } from '@/types'
 
 // ---- API Key Copy Button ----
 

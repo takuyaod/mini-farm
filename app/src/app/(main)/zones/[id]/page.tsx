@@ -7,6 +7,7 @@ import { ZoneInfoCard } from '@/features/zones/components/ZoneInfoCard'
 import { SensorSection } from '@/features/zones/components/SensorSection'
 import { DeviceStatus } from '@/features/zones/components/DeviceStatus'
 import { ZoneRealtimeProvider } from '@/features/zones/components/ZoneRealtimeProvider'
+import { CultivationHistory } from '@/features/zones/components/CultivationHistory'
 
 export default async function ZoneDetailPage({
   params,
@@ -18,7 +19,7 @@ export default async function ZoneDetailPage({
 
   if (!data) notFound()
 
-  const { zone, devices, sensors, unresolvedAlerts, currentPlant, isOffline, latestLastSeen } = data
+  const { zone, devices, sensors, unresolvedAlerts, currentPlant, pastPlants, isOffline, latestLastSeen } = data
 
   const sensorIds = sensors.map((s) => s.id)
 
@@ -113,6 +114,9 @@ export default async function ZoneDetailPage({
 
           {/* デバイス欄 */}
           <DeviceStatus devices={devices} />
+
+          {/* 栽培履歴 */}
+          <CultivationHistory pastPlants={pastPlants} />
         </div>
       </main>
 

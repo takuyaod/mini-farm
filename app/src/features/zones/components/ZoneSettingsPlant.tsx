@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { startCultivation, type StartCultivationState } from '../api/startCultivation'
-import type { Plant } from '@/features/dashboard/types'
+import type { Plant } from '@/types'
 
 type Props = {
   zoneId: string

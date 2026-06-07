@@ -1,8 +1,8 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { OFFLINE_THRESHOLD_MIN } from '@/constants'
-import type { SensorWithAlert, ZoneDetailData } from '../types'
-import type { Alert, Device, PlantThreshold, Reading, Sensor, Zone, ZonePlant } from '@/features/dashboard/types'
+import type { SensorWithAlert, ZoneDetailData, HarvestedZonePlant } from '../types'
+import type { Alert, Device, PlantThreshold, Reading, Sensor, Zone, ZonePlant } from '@/types'
 
 export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | null> {
   const supabase = await createClient()
@@ -15,7 +15,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
 
   if (zoneError || !zone) return null
 
-  const [devicesRes, zonePlantRes] = await Promise.all([
+  const [devicesRes, zonePlantRes, pastPlantsRes] = await Promise.all([
     supabase
       .from('devices')
       .select('*, sensors(*, sensor_type_masters(*))')
@@ -26,10 +26,22 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
       .eq('zone_id', zoneId)
       .is('harvested_at', null)
       .maybeSingle(),
+    supabase
+      .from('zone_plants')
+      .select('*, plants(*)')
+      .eq('zone_id', zoneId)
+      .not('harvested_at', 'is', null)
+      .order('planted_at', { ascending: false })
+      .limit(50),
   ])
 
   const devices: Device[] = devicesRes.data ?? []
   const currentPlant = zonePlantRes.data ?? null
+
+  if (pastPlantsRes.error) {
+    console.error('Failed to fetch past plants:', pastPlantsRes.error)
+  }
+  const pastPlants: HarvestedZonePlant[] = (pastPlantsRes.data ?? []) as HarvestedZonePlant[]
 
   const allActiveSensors: Sensor[] = devices.flatMap((d: Device) =>
     d.sensors.filter((s: Sensor) => s.is_active)
@@ -110,6 +122,7 @@ export async function getZoneDetail(zoneId: string): Promise<ZoneDetailData | nu
     sensors,
     unresolvedAlerts: allAlerts,
     currentPlant,
+    pastPlants,
     isOffline,
     latestLastSeen,
   }
