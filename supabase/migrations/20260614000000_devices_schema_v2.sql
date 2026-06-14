@@ -99,9 +99,21 @@ CREATE TABLE enrollment_keys (
 );
 
 -- ============================================================
--- 6. enrollment_keys の RLS を設定
+-- 6. enrollment_keys のインデックスを追加
+-- ============================================================
+
+-- key_hash は UNIQUE 制約により暗黙インデックスが作成される。
+-- user_id は RLS 評価・一覧取得でシーケンシャルスキャンが発生しないよう明示追加。
+CREATE INDEX IF NOT EXISTS idx_enrollment_keys_user_id ON enrollment_keys (user_id);
+
+-- ============================================================
+-- 7. enrollment_keys の RLS を設定
 -- ============================================================
 ALTER TABLE enrollment_keys ENABLE ROW LEVEL SECURITY;
 
+-- FOR ALL（SELECT / INSERT / UPDATE / DELETE）をすべて許可する。
+-- 登録キーの発行は Edge Function 経由ではなく UI からユーザー自身が行う設計のため、
+-- INSERT を除外しない。Edge Function（enroll エンドポイント）は Service Role Key で
+-- RLS をバイパスするため、このポリシーは UI からのアクセスにのみ適用される。
 CREATE POLICY "owner only" ON enrollment_keys
     FOR ALL USING (enrollment_keys.user_id = auth.uid());

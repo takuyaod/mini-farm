@@ -689,6 +689,38 @@ Edge Function 内では **Service Role Key** を使って RLS をバイパスす
 
 ---
 
+## 本番 DB への適用手順（将来参照用）
+
+> 現時点（2026-06-14）では `supabase db reset` によるローカル開発専用のマイグレーションであり、本番 DB は存在しない。  
+> 将来、既存レコードが存在する本番 DB に `20260614000000_devices_schema_v2.sql` を適用する際は以下の手順に従うこと。
+
+### `mac_address NOT NULL UNIQUE` の適用
+
+`mac_address VARCHAR(17) NOT NULL UNIQUE` は空テーブル前提の制約追加である。  
+既存レコードがある環境にそのまま適用すると `ERROR: column "mac_address" of relation "devices" contains null values` で失敗する。
+
+**適用手順**
+
+1. まず NULL 許容でカラムを追加する:
+   ```sql
+   ALTER TABLE devices ADD COLUMN mac_address VARCHAR(17) UNIQUE;
+   ```
+2. 既存デバイスの MAC アドレスを手動または管理ツールで補完する:
+   ```sql
+   UPDATE devices SET mac_address = '<実際のMAC>' WHERE id = '<device_id>';
+   ```
+3. 全レコードに MAC アドレスが入っていることを確認してから NOT NULL 制約を付与する:
+   ```sql
+   ALTER TABLE devices ALTER COLUMN mac_address SET NOT NULL;
+   ```
+
+### `user_id NOT NULL` の適用
+
+マイグレーション内に記載の通り、NULL 許容で追加 → zone_id 経由で補完 → NOT NULL 制約付与 の手順で適用できる。  
+既存デバイスに `zone_id = NULL` のレコードが存在する場合は手動で `user_id` を設定してから NOT NULL 制約を付与すること。
+
+---
+
 ## v4 からの変更点
 
 ### 新規テーブル
