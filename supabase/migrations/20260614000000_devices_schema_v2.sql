@@ -26,11 +26,13 @@ ALTER TABLE devices
 
 -- 既存レコードが存在する場合は zone_id 経由で user_id を補完する
 -- （supabase db reset では seed.sql の前にマイグレーションが走るため実際には空テーブル）
+-- zone_id IS NOT NULL を明示し、ゾーン未割り当てデバイスが誤って更新されないよう保護する
 UPDATE devices d
    SET user_id = z.user_id
   FROM zones z
  WHERE z.id = d.zone_id
-   AND d.user_id IS NULL;
+   AND d.user_id IS NULL
+   AND d.zone_id IS NOT NULL;
 
 ALTER TABLE devices ALTER COLUMN user_id SET NOT NULL;
 
@@ -71,8 +73,11 @@ CREATE INDEX IF NOT EXISTS idx_devices_mac_address   ON devices (mac_address);
 DROP POLICY IF EXISTS "owner only" ON devices;
 
 -- 新規ポリシー 1: SELECT / INSERT / DELETE は user_id で直接判定
+-- WITH CHECK を明示することで INSERT/UPDATE 時の検証意図を "owner can assign zone" と揃える
 CREATE POLICY "owner only" ON devices
-    FOR ALL USING (devices.user_id = auth.uid());
+    FOR ALL
+    USING (devices.user_id = auth.uid())
+    WITH CHECK (devices.user_id = auth.uid());
 
 -- 新規ポリシー 2: UPDATE 時はゾーンの所有権も検証
 CREATE POLICY "owner can assign zone" ON devices
