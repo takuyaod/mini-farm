@@ -177,7 +177,7 @@ CREATE TABLE devices (
 ```sql
 CREATE TABLE enrollment_keys (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
-    user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,  -- ユーザー削除時に連鎖削除（失効した登録キーも同時に破棄）
     key_hash    VARCHAR(64) NOT NULL UNIQUE,  -- SHA-256ハッシュ（hex）
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     revoked_at  TIMESTAMPTZ                  -- NULL = 有効。失効操作で now() をセット
