@@ -14,7 +14,7 @@ INSERT INTO sensor_type_masters (id, label, unit, cultivation_type) VALUES
 
 -- ============================================================
 -- 開発用ユーザー・ゾーン・デバイス
--- api_key: dev-api-key-001（SHA-256ハッシュ登録済み）
+-- mac_address: AA:BB:CC:DD:EE:01（擬似MAC、ローカル開発専用）
 -- ============================================================
 
 -- auth.users に開発用ユーザーを登録（ローカル開発環境専用）
@@ -53,10 +53,23 @@ INSERT INTO zones (id, user_id, name, type, created_at) VALUES (
     now()
 );
 
--- 開発用デバイス（api_key_hash は SHA-256("dev-api-key-001")）
-INSERT INTO devices (id, zone_id, name, api_key_hash) VALUES (
+-- 開発用デバイス（案A: MACクレーム方式、擬似MAC使用）
+INSERT INTO devices (id, user_id, zone_id, name, mac_address, status, device_token_hash) VALUES (
     'e1b2c3d4-0000-7000-8000-000000000001',
+    'c1b2c3d4-0000-7000-8000-000000000001',
     'd1b2c3d4-0000-7000-8000-000000000001',
     '開発用デバイス1',
-    '0c8d48c0f50b513727be8cff1dcd66dbfe49419755a0dba68ccc503dc4ec439d'
+    'AA:BB:CC:DD:EE:01',
+    'active',
+    NULL
+);
+
+-- 開発用 enrollment_key（ローカル開発環境専用）
+-- key_hash は SHA-256("dev-enrollment-key-001") の値
+INSERT INTO enrollment_keys (id, user_id, key_hash, created_at, revoked_at) VALUES (
+    'f1b2c3d4-0000-7000-8000-000000000001',
+    'c1b2c3d4-0000-7000-8000-000000000001',
+    '3c9683017bc0d031e1e3a7dd62b36cf4bd64cff3ade79e4e48e9e7dcdaec8e3f',
+    now(),
+    NULL
 );
