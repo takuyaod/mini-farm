@@ -2,11 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, getUser } from '@/lib/supabase/server'
-import { generateApiKey } from '@/lib/generateApiKey'
 
 export type AddDeviceState = {
   success: boolean
-  apiKey?: string
   error?: string
 }
 
@@ -19,19 +17,21 @@ export async function addDevice(
 
   const zoneId = formData.get('zone_id') as string
   const name = (formData.get('name') as string | null)?.trim() || null
+  const macAddress = (formData.get('mac_address') as string | null)?.trim()
 
-  const { rawKey, apiKeyHash } = await generateApiKey()
+  if (!macAddress) return { success: false, error: 'MACアドレスは必須です' }
 
   const supabase = await createClient()
 
   const { error } = await supabase.from('devices').insert({
-    zone_id: zoneId,
+    zone_id: zoneId || null,
     name,
-    api_key_hash: apiKeyHash,
+    mac_address: macAddress,
+    user_id: user.id,
   })
 
   if (error) return { success: false, error: 'デバイスの追加に失敗しました' }
 
   revalidatePath(`/zones/${zoneId}/settings`)
-  return { success: true, apiKey: rawKey }
+  return { success: true }
 }

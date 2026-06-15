@@ -69,7 +69,7 @@ INSERT INTO devices (id, user_id, zone_id, name, mac_address, status, device_tok
 INSERT INTO enrollment_keys (id, user_id, key_hash, created_at, revoked_at) VALUES (
     'f1b2c3d4-0000-7000-8000-000000000001',
     'c1b2c3d4-0000-7000-8000-000000000001',
-    '3c9683017bc0d031e1e3a7dd62b36cf4bd64cff3ade79e4e48e9e7dcdaec8e3f',
+    'e9e358b0fd99507ba49283bf26d519fa092e2a41777a466eed29b241d0361517',
     now(),
     NULL
 );

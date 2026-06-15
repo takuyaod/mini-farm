@@ -60,8 +60,11 @@ export type Alert = {
 
 export type Device = {
   id: string
-  zone_id: string
+  user_id: string
+  zone_id: string | null
   name: string | null
+  mac_address: string
+  status: 'pending' | 'active' | 'revoked'
   last_seen_at: string | null
   sensors: Sensor[]
 }
