@@ -47,8 +47,9 @@ ALTER TABLE devices
     ADD COLUMN status device_status NOT NULL DEFAULT 'pending';
 
 -- 2-5. device_token_hash カラムを追加（将来用・当面未使用）
+--   NULL がデフォルトのため NULL キーワードは省略する
 ALTER TABLE devices
-    ADD COLUMN device_token_hash VARCHAR NULL;
+    ADD COLUMN device_token_hash VARCHAR;  -- NULL = 未設定（将来用）
 
 -- 2-6. zone_id を NULL 許容に変更
 ALTER TABLE devices ALTER COLUMN zone_id DROP NOT NULL;
@@ -58,6 +59,13 @@ ALTER TABLE devices DROP CONSTRAINT IF EXISTS devices_zone_id_fkey;
 ALTER TABLE devices
     ADD CONSTRAINT devices_zone_id_fkey
         FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE SET NULL;
+
+-- 2-8. status と zone_id の整合性を DB レベルで保証する CHECK 制約
+--   active 状態のデバイスは必ずゾーンに割り当てられていること。
+--   アプリ層（Edge Function）でもガードするが、DB 層でも保証することで二重防衛とする。
+ALTER TABLE devices
+    ADD CONSTRAINT chk_active_requires_zone
+    CHECK (status != 'active' OR zone_id IS NOT NULL);
 
 -- ============================================================
 -- 3. インデックス追加
@@ -120,5 +128,11 @@ ALTER TABLE enrollment_keys ENABLE ROW LEVEL SECURITY;
 -- 登録キーの発行は Edge Function 経由ではなく UI からユーザー自身が行う設計のため、
 -- INSERT を除外しない。Edge Function（enroll エンドポイント）は Service Role Key で
 -- RLS をバイパスするため、このポリシーは UI からのアクセスにのみ適用される。
+--
+-- NOTE: FOR ALL には UPDATE も含まれるため、ユーザーは自身の revoked_at を
+-- NULL に戻す（再有効化）操作も RLS 上は可能。
+-- これは意図した設計である（UI でのキー管理をユーザーが自由に行える）。
+-- 将来的に失効操作を一方向（NULL → timestamp）のみに制限したい場合は、
+-- FOR UPDATE ポリシーに WITH CHECK を追加するか、Edge Function 経由のみに限定すること。
 CREATE POLICY "owner only" ON enrollment_keys
     FOR ALL USING (enrollment_keys.user_id = auth.uid());

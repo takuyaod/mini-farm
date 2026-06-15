@@ -149,7 +149,9 @@ CREATE TABLE devices (
     name         VARCHAR(100),                 -- 例: "水質担当"（任意）
     status       device_status NOT NULL DEFAULT 'pending',
     firmware_ver VARCHAR(20),
-    last_seen_at TIMESTAMPTZ                   -- readings受信時に自動更新。15分超でオフライン扱い
+    last_seen_at TIMESTAMPTZ,                  -- readings受信時に自動更新。15分超でオフライン扱い
+    CONSTRAINT chk_active_requires_zone
+        CHECK (status != 'active' OR zone_id IS NOT NULL)
 );
 ```
 
@@ -165,6 +167,16 @@ CREATE TABLE devices (
 > 本番の送信間隔は10分のため、閾値は送信間隔の1.5倍である15分に設定する。  
 > 送信間隔を変更した場合は、この閾値も合わせて見直すこと。  
 > 閾値は `OFFLINE_THRESHOLD_MINUTES` 定数としてバックエンド・フロントエンドで一元管理する。
+
+> **ユーザー削除時の制約（ON DELETE RESTRICT）**  
+> `devices.user_id` は `ON DELETE RESTRICT` のため、デバイスが存在するユーザーを `auth.users` から削除しようとするとエラーになる（削除がブロックされる）。  
+> これは意図した設計であり、デバイスを誤って孤立させないための保護である。  
+> アプリ側でユーザー削除フローを実装する場合は、以下の順序で削除すること:  
+> 1. そのユーザーに属するすべての `devices` レコードを削除する  
+> 2. `enrollment_keys` は `ON DELETE CASCADE` のため自動削除される  
+> 3. ユーザーを削除する  
+>
+> なお、ゾーンが削除されても `devices.zone_id` は `ON DELETE SET NULL` で NULL に戻るだけでデバイスレコード自体は残留する。デバイスはゾーン削除によって自動削除されない点に注意すること。
 
 ---
 
