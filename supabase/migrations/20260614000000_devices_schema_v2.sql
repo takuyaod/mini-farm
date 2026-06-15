@@ -63,9 +63,32 @@ ALTER TABLE devices
 -- 2-8. status と zone_id の整合性を DB レベルで保証する CHECK 制約
 --   active 状態のデバイスは必ずゾーンに割り当てられていること。
 --   アプリ層（Edge Function）でもガードするが、DB 層でも保証することで二重防衛とする。
+--
+--   NOTE: zone_id は ON DELETE SET NULL のため、ゾーン削除時には zone_id が NULL になる。
+--   この CHECK 制約と矛盾しないよう、ゾーン削除の BEFORE DELETE トリガーで
+--   status='active' のデバイスを事前に 'pending' へ戻す（後述 セクション 2-9 参照）。
 ALTER TABLE devices
     ADD CONSTRAINT chk_active_requires_zone
     CHECK (status != 'active' OR zone_id IS NOT NULL);
+
+-- 2-9. ゾーン削除時に active デバイスを pending へ戻すトリガー
+--   ON DELETE SET NULL（2-7）が実行される前に status を 'pending' に戻すことで、
+--   chk_active_requires_zone（2-8）との矛盾を防ぐ。
+--   これによりゾーン削除は常に成功し、デバイスは再割り当て待ち状態になる。
+CREATE OR REPLACE FUNCTION reset_device_status_on_zone_delete()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE devices
+       SET status = 'pending', zone_id = NULL
+     WHERE zone_id = OLD.id
+       AND status = 'active';
+    RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER trg_zone_delete_reset_devices
+    BEFORE DELETE ON zones
+    FOR EACH ROW EXECUTE FUNCTION reset_device_status_on_zone_delete();
 
 -- ============================================================
 -- 3. インデックス追加
@@ -124,15 +147,32 @@ CREATE INDEX IF NOT EXISTS idx_enrollment_keys_user_id ON enrollment_keys (user_
 -- ============================================================
 ALTER TABLE enrollment_keys ENABLE ROW LEVEL SECURITY;
 
--- FOR ALL（SELECT / INSERT / UPDATE / DELETE）をすべて許可する。
--- 登録キーの発行は Edge Function 経由ではなく UI からユーザー自身が行う設計のため、
--- INSERT を除外しない。Edge Function（enroll エンドポイント）は Service Role Key で
--- RLS をバイパスするため、このポリシーは UI からのアクセスにのみ適用される。
+-- enrollment_keys の RLS ポリシー設計方針:
 --
--- NOTE: FOR ALL には UPDATE も含まれるため、ユーザーは自身の revoked_at を
--- NULL に戻す（再有効化）操作も RLS 上は可能。
--- これは意図した設計である（UI でのキー管理をユーザーが自由に行える）。
--- 将来的に失効操作を一方向（NULL → timestamp）のみに制限したい場合は、
--- FOR UPDATE ポリシーに WITH CHECK を追加するか、Edge Function 経由のみに限定すること。
+-- RLS は列レベル制御ができないため、FOR ALL（UPDATE を含む）ポリシーでは
+-- ユーザーが自身の key_hash を任意の値に書き換えられるセキュリティリスクがある。
+-- これを防ぐため、UPDATE を RLS ポリシーから除外する。
+--
+-- UPDATE（revoked_at の更新による失効操作）は Edge Function（Service Role Key）
+-- 経由のみで行う設計とし、UI からの直接 UPDATE は許可しない。
+-- Edge Function は RLS をバイパスするため、このポリシーの対象外になる。
+--
+-- 登録キーの発行は UI からユーザー自身が行う設計のため INSERT は許可する。
+-- Edge Function（enroll エンドポイント）は Service Role Key で RLS をバイパスする。
+
+-- SELECT / INSERT / DELETE のみ許可（UPDATE は除外）
 CREATE POLICY "owner only" ON enrollment_keys
-    FOR ALL USING (enrollment_keys.user_id = auth.uid());
+    FOR SELECT
+    USING (enrollment_keys.user_id = auth.uid());
+
+CREATE POLICY "owner insert" ON enrollment_keys
+    FOR INSERT
+    WITH CHECK (enrollment_keys.user_id = auth.uid());
+
+CREATE POLICY "owner delete" ON enrollment_keys
+    FOR DELETE
+    USING (enrollment_keys.user_id = auth.uid());
+
+-- UPDATE ポリシーは意図的に定義しない。
+-- 失効操作（revoked_at の更新）は Edge Function（Service Role Key）経由のみとする。
+-- これにより key_hash の書き換えを RLS レベルで完全に防止する。
