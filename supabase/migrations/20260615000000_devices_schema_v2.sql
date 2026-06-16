@@ -12,23 +12,57 @@ CREATE TYPE device_status AS ENUM ('pending', 'active', 'revoked');
 -- 2. devices テーブル変更
 -- ============================================================
 
--- user_id を追加
--- 注意: NOT NULL をデフォルト値なしで追加しているため、既存行がある環境では migration が失敗します。
--- このプロジェクトはローカル開発環境での `supabase db reset` を前提としており、
--- 既存データがある本番環境への適用は想定していません。
--- 本番環境に適用する場合は: nullable で追加 → バックフィル → NOT NULL 化 の段階的手順が必要です。
-ALTER TABLE devices
-    ADD COLUMN user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT;
-
--- mac_address を追加（フォーマット: AA:BB:CC:DD:EE:FF、大文字16進）
--- 注意: user_id と同様に既存行がある環境では migration が失敗します（上記コメント参照）。
-ALTER TABLE devices
-    ADD COLUMN mac_address VARCHAR(17) NOT NULL UNIQUE
-        CHECK (mac_address ~ '^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
-
--- status を追加
+-- status を追加（DEFAULT 'pending' があるため既存行も自動的に埋まる）
+-- mac_address のバックフィルで status を更新するため、先に追加しておく。
 ALTER TABLE devices
     ADD COLUMN status device_status NOT NULL DEFAULT 'pending';
+
+-- user_id を追加（段階的手順: nullable で追加 → バックフィル → NOT NULL 化）
+-- 既存行がある本番環境でも migration が失敗しないよう、デフォルトなし NOT NULL の
+-- 一括追加は避ける。ローカル開発（空テーブルへの db reset）では UPDATE は 0 行で no-op。
+ALTER TABLE devices
+    ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE RESTRICT;
+
+-- 既存デバイスの所有者は zone 経由で確定できる（移行前 devices.zone_id は NOT NULL）。
+UPDATE devices d
+    SET user_id = z.user_id
+    FROM zones z
+    WHERE d.zone_id = z.id
+      AND d.user_id IS NULL;
+
+ALTER TABLE devices
+    ALTER COLUMN user_id SET NOT NULL;
+
+-- mac_address を追加（フォーマット: AA:BB:CC:DD:EE:FF、大文字16進）
+-- user_id と同様に段階的手順で追加する。
+ALTER TABLE devices
+    ADD COLUMN mac_address VARCHAR(17);
+
+-- 既存デバイスは実 MAC を持たないため、id 由来の一意な擬似 MAC を生成して埋め、
+-- status を 'pending'（再クレーム待ち）に落とす（案A: MAC クレーム方式と整合）。
+-- uuid v7 の末尾 48bit（ランダム部）を 6 オクテットに変換するため衝突は実用上発生しない。
+-- ローカル開発（空テーブル）では UPDATE は 0 行で no-op。
+UPDATE devices
+    SET mac_address = upper(
+            substr(replace(id::text, '-', ''), 21, 2) || ':' ||
+            substr(replace(id::text, '-', ''), 23, 2) || ':' ||
+            substr(replace(id::text, '-', ''), 25, 2) || ':' ||
+            substr(replace(id::text, '-', ''), 27, 2) || ':' ||
+            substr(replace(id::text, '-', ''), 29, 2) || ':' ||
+            substr(replace(id::text, '-', ''), 31, 2)
+        ),
+        status = 'pending'
+    WHERE mac_address IS NULL;
+
+ALTER TABLE devices
+    ALTER COLUMN mac_address SET NOT NULL;
+
+ALTER TABLE devices
+    ADD CONSTRAINT devices_mac_address_key UNIQUE (mac_address);
+
+ALTER TABLE devices
+    ADD CONSTRAINT devices_mac_address_check
+        CHECK (mac_address ~ '^([0-9A-F]{2}:){5}[0-9A-F]{2}$');
 
 -- device_token_hash を追加（将来用）
 ALTER TABLE devices
