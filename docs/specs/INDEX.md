@@ -8,8 +8,8 @@ ESP32マイコンで取得したセンサーデータをクラウドに送信し
 
 | 仕様書 | バージョン | 内容 |
 |---|---|---|
-| [データモデル](DATA_MODEL.md) | v5 | DBスキーマ・テーブル定義・RLSポリシー・ESP32送信フォーマット |
-| [画面仕様書](SCREEN_SPEC.md) | v6 | 画面レイアウト・ルーティング・認証フロー・Realtimeリアルタイム更新 |
+| [データモデル](DATA_MODEL.md) | v4 | DBスキーマ・テーブル定義・RLSポリシー・ESP32送信フォーマット |
+| [画面仕様書](SCREEN_SPEC.md) | v5 | 画面レイアウト・ルーティング・認証フロー・Realtimeリアルタイム更新 |
 | [技術選定仕様書](TECH_STACK.md) | v7 | 技術スタック・リポジトリ構成・開発環境（DevContainer）・Vercelデプロイ |
 
 ---
@@ -43,25 +43,16 @@ ESP32（センサー計測）
 
 ## データモデル概要
 
-主要テーブル11本で構成。`zones`（栽培エリア）を起点に、デバイス・センサー・計測値・アラートが連なる構造。  
-v5 よりデバイス認証を API キー方式から **MAC クレーム方式（案A）** に変更した。
+主要テーブル10本で構成。`zones`（栽培エリア）を起点に、デバイス・センサー・計測値・アラートが連なる構造。
 
 ```
-users → zones → devices（zone_id NULL 許容）→ sensors → readings
-     ↑                                     ↑
-     └─ enrollment_keys        sensor_type_masters
-     └─ devices（user_id で直接所有）
-
+users → zones → devices → sensors → readings
+                        ↑
+              sensor_type_masters
 zones → zone_plants ← plants → plant_thresholds
 sensors → alerts
 ```
 
-- デバイス認証フロー（v5〜）:
-  1. 全 ESP32 に同一ファーム＋共有「登録キー」（`enrollment_keys`）1本を書き込む
-  2. 起動時に ESP32 が MAC アドレスを enroll エンドポイントに POST → `pending` 状態でデバイス登録
-  3. UI で pending デバイスをゾーンに割り当て → `active` 化
-  4. 以降は `X-Device-MAC` ヘッダーのみで認証（登録キー不要）
-- `devices.user_id` を直接持つためフラット RLS 述語（JOIN なし）が適用される
 - 計測値（`readings`）はraw値で保存。補正は`sensor_calibrations`テーブル追加で後対応
 - 主キーはUUID v7（時系列ソート可能。大量INSERTの多い`readings`でBTreeインデックス断片化を抑制）
 - オフライン判定閾値：15分（本番送信間隔10分の1.5倍）。`shared/constants.ts`で一元管理
