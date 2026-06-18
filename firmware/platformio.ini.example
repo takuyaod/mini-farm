@@ -1,0 +1,32 @@
+; firmware/platformio.ini.example
+;
+; このファイルをコピーして platformio.ini を作成してください。
+; platformio.ini は .gitignore に登録されており、リポジトリにコミットされません。
+;
+;   cp firmware/platformio.ini.example firmware/platformio.ini
+;
+; platformio.ini を編集し、WIFI_SSID / WIFI_PASSWORD / API_KEY / SUPABASE_URL
+; を実際の値に書き換えてからビルドしてください。
+
+[env:esp32s3]
+platform  = espressif32
+board     = esp32-s3-devkitc-1
+framework = arduino
+
+; ライブラリ依存関係
+; HTTPClient は ESP32 Arduino フレームワークに同梱されているため追加不要
+lib_deps =
+    bblanchon/ArduinoJson@^7.0.0
+
+; ビルドフラグ（APIキー・接続情報はここで注入し、main.cpp に直書きしない）
+build_flags =
+    -D WIFI_SSID=\"your-wifi-ssid\"
+    -D WIFI_PASSWORD=\"your-wifi-password\"
+    -D API_KEY=\"your-api-key-here\"
+    -D SUPABASE_URL=\"https://your-project.supabase.co\"
+    -D SEND_INTERVAL_MS=600000
+    ; デバッグ時は下の行のコメントを外すと HTTP レスポンスボディが表示されます
+    ; -D DEBUG
+
+; シリアルモニタの設定
+monitor_speed = 115200
