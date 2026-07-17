@@ -8,6 +8,10 @@ const corsHeaders = {
 // デバイス識別に使うヘッダー名（docs/specs/DATA_MODEL.md「フロー2：センサーデータ送信（readings）」参照）
 const DEVICE_MAC_HEADER = "X-Device-MAC"
 
+// devices.mac_address の CHECK 制約と同じ形式（コロン区切り大文字16進数）。
+// enroll（supabase/functions/enroll/index.ts）と同じ正規表現を使用する
+const MAC_ADDRESS_REGEX = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/
+
 interface SensorReading {
   sensor_type: string
   value: number
@@ -47,40 +51,53 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
   // 1. デバイス認証（X-Device-MAC ヘッダー）
+  // MACアドレスは公開され得る識別子であり秘密情報ではないため、この認証は
+  // なりすましを構造的には防げないトレードオフを許容している（issue #124 で確定済み。
+  // 詳細は docs/specs/DATA_MODEL.md の「セキュリティ上のトレードオフと緩和策」を参照）。
   const macAddress = req.headers.get(DEVICE_MAC_HEADER)
-  if (!macAddress) {
+  if (!macAddress || !MAC_ADDRESS_REGEX.test(macAddress)) {
     return jsonResponse({ error: "Unauthorized" }, 401)
   }
 
-  const { data: device } = await supabase
+  const { data: device, error: deviceError } = await supabase
     .from("devices")
     .select("id, zone_id, status")
     .eq("mac_address", macAddress)
     .maybeSingle()
 
+  if (deviceError) {
+    console.error("Failed to look up device:", deviceError)
+    return jsonResponse({ error: "Internal server error" }, 500)
+  }
+
   if (!device) {
     return jsonResponse({ error: "Unauthorized" }, 401)
   }
 
+  // 未認証段階での応答は、端末の存在・状態の推測を避けるため一律のメッセージにする
   if (device.status !== "active") {
-    const message = device.status === "revoked" ? "Device is revoked" : "Device not approved"
-    return jsonResponse({ error: message }, 403)
+    return jsonResponse({ error: "Forbidden" }, 403)
   }
 
   // zone_id はバックエンド（devices テーブル）から解決する。ESP32からのボディ送信は不要
   if (!device.zone_id) {
-    return jsonResponse({ error: "Zone not assigned" }, 403)
+    return jsonResponse({ error: "Forbidden" }, 403)
   }
 
   // ゾーンの is_active チェック（非アクティブゾーンからのデータ送信を拒否）
-  const { data: zone } = await supabase
+  const { data: zone, error: zoneError } = await supabase
     .from("zones")
     .select("is_active")
     .eq("id", device.zone_id)
     .maybeSingle()
 
+  if (zoneError) {
+    console.error("Failed to look up zone:", zoneError)
+    return jsonResponse({ error: "Internal server error" }, 500)
+  }
+
   if (!zone?.is_active) {
-    return jsonResponse({ error: "Zone is inactive" }, 403)
+    return jsonResponse({ error: "Forbidden" }, 403)
   }
 
   // 2. バリデーション
