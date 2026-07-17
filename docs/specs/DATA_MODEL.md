@@ -172,11 +172,13 @@ CREATE TABLE devices (
 --   1. pending → active   （承認。user_id・zone_id を同時に確定させる。CHECK制約 chk_device_status_invariants
 --                            により user_id IS NOT NULL も同時に保証される）
 --   2. active  → revoked  （無効化。所有者による手動操作のみ）
---   3. active  → pending  （システムによる自動遷移のみ。ゾーン削除で zone_id が NULL に戻ったとき）
+--   3. active  → pending  （システムによる自動遷移のみ。ゾーン削除で zone_id が NULL に戻ったとき。
+--                            所有者が UPDATE で直接 zone_id を NULL にする経路は下記 (a) で明示的に拒否する）
 --   4. active / revoked / pending（所有者持ち） → revoked
 --      （システムによる自動遷移のみ。所有ユーザー削除で user_id が NULL に戻ったとき。
 --       pending〈所有者持ち〉を対象から外すと、ユーザー削除後に「公開 pending」化してしまうため対象に含める）
--- それ以外（revoked → active の再有効化、pending → revoked の手動操作、任意の直接的な zone_id/user_id クリア等）はすべて拒否する。
+-- それ以外（revoked → active の再有効化、pending → revoked の手動操作、所有者による active デバイスの
+-- zone_id 直接クリア等）はすべて拒否する。
 CREATE OR REPLACE FUNCTION enforce_device_state_machine()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -185,7 +187,22 @@ BEGIN
     --     結果として「pending だが user_id が残っている」状態になるが、これは chk_device_status_invariants で許容している意図的な状態。
     --     この状態を公開 pending（誰でも承認可）と区別するため、RLS 側は user_id ではなく status = 'pending' AND user_id IS NULL を
     --     公開条件にすること（後述の RLS ポリシー設計を参照）。
+    --
+    --     この遷移は「システムによる自動遷移のみ」（ゾーン削除時の FK ON DELETE SET NULL カスケード経由）に
+    --     限定する。RLS の WITH CHECK は所有者による zone_id IS NULL への更新自体は妨げないため（後述の
+    --     「approve or manage own devices」ポリシー参照）、区別を RLS だけに委ねると、所有者が通常の
+    --     UPDATE で zone_id を直接 NULL にするだけでも同じ遷移を発生させられてしまう。
+    --     これを防ぐため pg_trigger_depth() を利用する：FK の ON DELETE SET NULL カスケードは、
+    --     zones の DELETE によって発生する内部トリガー実行の「入れ子」の中で devices の UPDATE を
+    --     実行するため、このトリガーが呼ばれた時点で pg_trigger_depth() は 2 以上になる。一方、
+    --     クライアントが `UPDATE devices SET zone_id = NULL ...` を直接発行した場合は、このトリガー自体が
+    --     最初のトリガー呼び出しとなるため pg_trigger_depth() は 1 のままである。この差を利用して、
+    --     トリガーの外（＝クライアントの直接操作）からの zone_id クリアだけを拒否する。
     IF NEW.zone_id IS NULL AND OLD.zone_id IS NOT NULL AND OLD.status = 'active' THEN
+        IF pg_trigger_depth() <= 1 THEN
+            RAISE EXCEPTION 'devices.zone_id を直接 NULL にすることはできません。ゾーンが削除された場合にのみシステムが自動的に解除します'
+                USING ERRCODE = '42501';
+        END IF;
         NEW.status := 'pending';
         RETURN NEW;
     END IF;
@@ -227,10 +244,10 @@ CREATE TRIGGER trg_enforce_device_state_machine
 |---|---|---|
 | `pending` → `active` | 承認（`approveDevice`） | 認証済みユーザー。「公開 pending」（`user_id IS NULL`）は誰でも承認可、「所有者持ち pending」（`user_id` が自分と一致）は本人のみ再割当可。CHECK制約 `chk_device_status_invariants` により、遷移後は `user_id IS NOT NULL` かつ `zone_id IS NOT NULL` であることがDBレベルで保証される |
 | `active` → `revoked` | 無効化（`revokeDevice`） | デバイス所有者のみ |
-| `active` → `pending`（`user_id` は保持） | ゾーン削除による自動巻き戻し | システム（トリガー） |
+| `active` → `pending`（`user_id` は保持） | ゾーン削除による自動巻き戻し | システム（トリガー。`pg_trigger_depth()` により FK カスケード経由の遷移のみ許可し、所有者が `zone_id` を直接 `NULL` にする通常の `UPDATE` は例外を送出して拒否する） |
 | `active` / `revoked` / `pending`（所有者持ち） → `revoked`（`user_id` は `NULL` になる） | 所有ユーザー（`auth.users`）削除時の自動フェイルセーフ。`status` を問わず一律に適用することで、「所有者持ち pending」のユーザーが削除された際に `status='pending', user_id=NULL`（＝公開 pending）へ落ちて全認証ユーザーに公開される事故を防ぐ | システム（トリガー） |
 
-上記以外の遷移（`revoked → active` の再有効化、`pending → revoked` の手動操作、`active`/`revoked` の `user_id` を直接 `NULL` に戻す操作等）は `trg_enforce_device_state_machine` が例外を送出して拒否する。Service Role Key はRLSをバイパスするが、このトリガーおよび CHECK 制約はバイパスしないため `enroll` エンドポイント経由の操作にも適用される。
+上記以外の遷移（`revoked → active` の再有効化、`pending → revoked` の手動操作、所有者による `active` デバイスの `zone_id` 直接クリア等）は `trg_enforce_device_state_machine` が例外を送出して拒否する。Service Role Key はRLSをバイパスするが、このトリガーおよび CHECK 制約はバイパスしないため `enroll` エンドポイント経由の操作にも適用される。
 
 > **`pending` の2種類の意味**  
 > - 「公開 pending」（`user_id IS NULL`）：`enroll` 直後の未承認デバイス。認証済み全員が閲覧・承認可能  
@@ -756,6 +773,10 @@ CREATE POLICY "select pending or own devices" ON devices
 -- WITH CHECK で「更新後は自分の所有物になっていること」「割当先ゾーンが自分のものであること」を保証する。
 -- 遷移そのものの妥当性（revoked → active の再有効化拒否等）は trg_enforce_device_state_machine が保証するため、
 -- ここでは「誰が」「どのゾーンに対して」更新できるかのみを扱う。
+-- 下記 WITH CHECK は zone_id IS NULL への更新自体は許可している（所有者持ち pending 状態を維持したまま
+-- 名前編集する場合などに必要）が、active なデバイスの zone_id を NULL にする更新は
+-- trg_enforce_device_state_machine 側（pg_trigger_depth() によるシステム経路限定）で拒否されるため、
+-- ここで重ねて制限する必要はない。
 CREATE POLICY "approve or manage own devices" ON devices
   FOR UPDATE USING (
     (status = 'pending' AND user_id IS NULL) OR user_id = auth.uid()
