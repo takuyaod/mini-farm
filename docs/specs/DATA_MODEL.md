@@ -153,23 +153,30 @@ CREATE TABLE devices (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),  -- 初回 enroll 日時（pending承認UIでの「初回接続日時」表示に使用）
     last_seen_at TIMESTAMPTZ,                  -- readings受信時に自動更新。15分超でオフライン扱い
 
-    -- status × zone_id の不変条件をDBレベルで固定する（`active` なのに未割り当て、等の矛盾を作成不可にする）。
+    -- status × zone_id × user_id の不変条件をDBレベルで固定する（`active` なのに未割り当て、等の矛盾を作成不可にする）。
     -- pending は「公開 pending」（user_id IS NULL・enroll直後）と「所有者持ち pending」
     -- （user_id IS NOT NULL・ゾーン削除で active から巻き戻った状態）の2種類があるため、
-    -- user_id の NULL 制約はここでは課さない（詳細は下記「状態遷移ルール」と RLS ポリシー設計を参照）。
+    -- pending 側では user_id の NULL 制約は課さない。
+    -- 一方 active は「承認済み・ユーザー / ゾーンに割り当て済み」を意味するため、zone_id に加えて
+    -- user_id も NOT NULL であることをここで固定する（pending → active 遷移時に user_id が NULL の
+    -- ままになる不正状態をDBレベルで作成不可にする）。
     CONSTRAINT chk_device_status_invariants CHECK (
         (status = 'pending' AND zone_id IS NULL) OR
-        (status = 'active'  AND zone_id IS NOT NULL) OR
+        (status = 'active'  AND zone_id IS NOT NULL AND user_id IS NOT NULL) OR
         (status = 'revoked')
     )
 );
 
 -- devices の状態機械を1つのトリガーで一元管理する（ゾーン解除の自動遷移 + ユーザー削除時の安全な遷移 + 不正な手動遷移の拒否）。
--- 許可される状態遷移は以下の3つのみ：
---   1. pending → active   （承認。user_id・zone_id を同時に確定させる）
+-- 許可される状態遷移は以下の4つのみ：
+--   1. pending → active   （承認。user_id・zone_id を同時に確定させる。CHECK制約 chk_device_status_invariants
+--                            により user_id IS NOT NULL も同時に保証される）
 --   2. active  → revoked  （無効化。所有者による手動操作のみ）
 --   3. active  → pending  （システムによる自動遷移のみ。ゾーン削除で zone_id が NULL に戻ったとき）
--- それ以外（revoked → active の再有効化、pending → revoked、任意の直接的な zone_id/user_id クリア等）はすべて拒否する。
+--   4. active / revoked / pending（所有者持ち） → revoked
+--      （システムによる自動遷移のみ。所有ユーザー削除で user_id が NULL に戻ったとき。
+--       pending〈所有者持ち〉を対象から外すと、ユーザー削除後に「公開 pending」化してしまうため対象に含める）
+-- それ以外（revoked → active の再有効化、pending → revoked の手動操作、任意の直接的な zone_id/user_id クリア等）はすべて拒否する。
 CREATE OR REPLACE FUNCTION enforce_device_state_machine()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -184,9 +191,13 @@ BEGIN
     END IF;
 
     -- (b) auth.users 側の削除（ON DELETE SET NULL）で user_id が NULL に落ちてきた場合は、
+    --     元の status を問わず（active / revoked に加え、ゾーン削除で巻き戻った「所有者持ち pending」も含む）、
     --     所有者を失ったデバイスを安全側（無効化）に倒し、再取得・再承認の対象にしない。
+    --     「所有者持ち pending」（status='pending' AND user_id IS NOT NULL）をここで除外すると、
+    --     ユーザー削除後に status='pending' AND user_id IS NULL となり、RLS 上「公開 pending」として
+    --     全認証ユーザーに公開・再取得されてしまうため、status によらず一律に revoked へ倒す。
     --     revoked は user_id の NULL/NOT NULL を問わないため chk_device_status_invariants には抵触しない。
-    IF NEW.user_id IS NULL AND OLD.user_id IS NOT NULL AND OLD.status IN ('active', 'revoked') THEN
+    IF NEW.user_id IS NULL AND OLD.user_id IS NOT NULL THEN
         NEW.status := 'revoked';
         RETURN NEW;
     END IF;
@@ -214,18 +225,19 @@ CREATE TRIGGER trg_enforce_device_state_machine
 
 | 遷移 | トリガー | 実行者 |
 |---|---|---|
-| `pending` → `active` | 承認（`approveDevice`） | 認証済みユーザー。「公開 pending」（`user_id IS NULL`）は誰でも承認可、「所有者持ち pending」（`user_id` が自分と一致）は本人のみ再割当可 |
+| `pending` → `active` | 承認（`approveDevice`） | 認証済みユーザー。「公開 pending」（`user_id IS NULL`）は誰でも承認可、「所有者持ち pending」（`user_id` が自分と一致）は本人のみ再割当可。CHECK制約 `chk_device_status_invariants` により、遷移後は `user_id IS NOT NULL` かつ `zone_id IS NOT NULL` であることがDBレベルで保証される |
 | `active` → `revoked` | 無効化（`revokeDevice`） | デバイス所有者のみ |
 | `active` → `pending`（`user_id` は保持） | ゾーン削除による自動巻き戻し | システム（トリガー） |
-| `active` / `revoked` → `revoked`（`user_id` は `NULL` になる） | 所有ユーザー（`auth.users`）削除時の自動フェイルセーフ | システム（トリガー） |
+| `active` / `revoked` / `pending`（所有者持ち） → `revoked`（`user_id` は `NULL` になる） | 所有ユーザー（`auth.users`）削除時の自動フェイルセーフ。`status` を問わず一律に適用することで、「所有者持ち pending」のユーザーが削除された際に `status='pending', user_id=NULL`（＝公開 pending）へ落ちて全認証ユーザーに公開される事故を防ぐ | システム（トリガー） |
 
-上記以外の遷移（`revoked → active` の再有効化、`pending → revoked`、`active`/`revoked` の `user_id` を直接 `NULL` に戻す操作等）は `trg_enforce_device_state_machine` が例外を送出して拒否する。Service Role Key はRLSをバイパスするが、このトリガーはバイパスしないため `enroll` エンドポイント経由の操作にも適用される。
+上記以外の遷移（`revoked → active` の再有効化、`pending → revoked` の手動操作、`active`/`revoked` の `user_id` を直接 `NULL` に戻す操作等）は `trg_enforce_device_state_machine` が例外を送出して拒否する。Service Role Key はRLSをバイパスするが、このトリガーおよび CHECK 制約はバイパスしないため `enroll` エンドポイント経由の操作にも適用される。
 
 > **`pending` の2種類の意味**  
 > - 「公開 pending」（`user_id IS NULL`）：`enroll` 直後の未承認デバイス。認証済み全員が閲覧・承認可能  
 > - 「所有者持ち pending」（`user_id IS NOT NULL`）：ゾーン削除で `active` から巻き戻ったデバイス。`user_id` が元の所有者のまま残っているため、RLS 上は元の所有者にしか見えない（他ユーザーからは通常の非公開デバイスと同様に扱われる）  
 >
-> この区別のため、RLS ポリシーは `status = 'pending'` 単体ではなく `status = 'pending' AND user_id IS NULL`（公開条件）と `user_id = auth.uid()`（所有者条件）の OR で判定する（詳細は [RLS ポリシー設計](#rls-ポリシー設計) を参照）。
+> この区別のため、RLS ポリシーは `status = 'pending'` 単体ではなく `status = 'pending' AND user_id IS NULL`（公開条件）と `user_id = auth.uid()`（所有者条件）の OR で判定する（詳細は [RLS ポリシー設計](#rls-ポリシー設計) を参照）。  
+> なお、「所有者持ち pending」の所有ユーザーが削除された場合は、`trg_enforce_device_state_machine` が `status` を `pending` のまま残さず `revoked` に自動遷移させる（詳細は下記「`zone_id` / `user_id` の NULL 許容」および [RLS ポリシー設計](#rls-ポリシー設計) の「ユーザー削除後のデバイスの扱い」を参照）。
 
 > **キーレス登録（TOFU）フロー**  
 > 1. ESP32起動時に無認証で `POST /enroll` へ `{mac_address, firmware_ver}` を送信する（毎回・冪等）  
@@ -240,7 +252,7 @@ CREATE TRIGGER trg_enforce_device_state_machine
 
 > **`zone_id` / `user_id` の NULL 許容**  
 > `pending` 状態では `zone_id` は常に NULL。`user_id` は enroll 直後の「公開 pending」では NULL だが、ゾーン削除で `active` から巻き戻った「所有者持ち pending」では NULL にならず元の所有者のIDを保持する（詳細は前述の「`pending` の2種類の意味」を参照）。`zone_id` の FK は `ON DELETE SET NULL` のため、ゾーンが削除されると `zone_id` が NULL に戻り、トリガーにより `status` も `pending` に戻る。  
-> `user_id` の FK も `ON DELETE SET NULL` のため、所有ユーザー（`auth.users`）が削除されると `user_id` が NULL に戻るが、この場合はトリガーが `status` を `revoked` に固定する（`pending` には戻さない）。理由は [RLS ポリシー設計](#rls-ポリシー設計) の「ユーザー削除後のデバイスの扱い」を参照。
+> `user_id` の FK も `ON DELETE SET NULL` のため、所有ユーザー（`auth.users`）が削除されると `user_id` が NULL に戻るが、この場合は元の `status`（`active` / `revoked` / `pending`〈所有者持ち〉のいずれであっても）を問わずトリガーが `status` を `revoked` に固定する（`pending` のまま残さない）。`pending`（所有者持ち）を対象から除外すると `status='pending', user_id=NULL` となり RLS 上「公開 pending」として全認証ユーザーに公開されてしまうため、`status` によらず一律に適用する。理由は [RLS ポリシー設計](#rls-ポリシー設計) の「ユーザー削除後のデバイスの扱い」を参照。
 
 > **オフライン判定の閾値について**  
 > 本番の送信間隔は10分のため、閾値は送信間隔の1.5倍である15分に設定する。  
@@ -730,9 +742,10 @@ ALTER TABLE devices ENABLE ROW LEVEL SECURITY;
 -- ※ 単純な user_id IS NULL や status = 'pending' 単体ではなく両方の AND を条件にすることで、
 --   (1) ゾーン削除で active から巻き戻った「所有者持ち pending」（user_id はそのまま残る）が
 --       他ユーザーに公開されてしまう事故を防ぎ、
---   (2) auth.users 削除により user_id が NULL に落ちた active/revoked デバイス
---       （status は revoked に固定される。前述の enforce_device_state_machine トリガーを参照）が
---       誰にも見えなくなる（詳細は下記「ユーザー削除後のデバイスの扱い」を参照）。
+--   (2) auth.users 削除により user_id が NULL に落ちたデバイス（元の status が active / revoked /
+--       pending〈所有者持ち〉のいずれであっても revoked に固定される。前述の enforce_device_state_machine
+--       トリガーを参照）が「公開 pending」として全ユーザーに再公開されず、誰にも見えなくなる
+--       （詳細は下記「ユーザー削除後のデバイスの扱い」を参照）。
 CREATE POLICY "select pending or own devices" ON devices
   FOR SELECT USING (
     (status = 'pending' AND user_id IS NULL) OR user_id = auth.uid()
@@ -772,7 +785,7 @@ CREATE POLICY "approve or manage own devices" ON devices
 > 複数ユーザー運用になった場合は、`pending` の可視性を絞る設計（例：組織単位のスコープ）への見直しが必要になる。
 
 > **ユーザー削除後のデバイスの扱い**  
-> 所有ユーザー（`auth.users`）が削除されると FK の `ON DELETE SET NULL` により `devices.user_id` が `NULL` に戻るが、`enforce_device_state_machine` トリガーが同時に `status` を `revoked` に固定する（`pending` には戻さない）。  
+> 所有ユーザー（`auth.users`）が削除されると FK の `ON DELETE SET NULL` により `devices.user_id` が `NULL` に戻るが、`enforce_device_state_machine` トリガーは元の `status`（`active` / `revoked` / `pending`〈所有者持ち〉のいずれであっても）を問わず同時に `status` を `revoked` に固定する（`pending` のまま残さない）。「所有者持ち pending」（ゾーン削除で `active` から巻き戻り、`user_id` は元の所有者のまま残っていたデバイス）を対象外にすると、ユーザー削除後に `status='pending', user_id=NULL` という「公開 pending」相当の状態がDB上成立し、全認証ユーザーに公開・再承認可能になってしまうため、`status` を問わず一律に `revoked` へ倒す。  
 > RLS の SELECT / UPDATE ポリシーの公開条件は `status = 'pending' AND user_id IS NULL`（＝公開 pending）に限定しているため、この時点で `status = 'revoked' AND user_id IS NULL` となったデバイスは「公開 pending の条件（`status = 'pending'`）を満たさず、`user_id = auth.uid()` にも一致しない」状態になり、**どの認証済みユーザーからも閲覧・再取得できなくなる**（意図的なフェイルセーフ。全ユーザーへの公開・再承認を防ぐことを優先し、孤児化を許容する）。  
 > 孤児化したデバイスの再割当が必要になった場合は、Supabase Studio 等の管理者権限（Service Role Key）から `user_id` / `zone_id` / `status` を手動で修復する運用とする（MVP時点ではユーザー削除自体が稀な操作のため自動復旧フローは設けない）。
 
@@ -821,8 +834,8 @@ Edge Function 内では **Service Role Key** を使って RLS をバイパスす
 | `mac_address` | **追加**（`VARCHAR(17) UNIQUE NOT NULL`、形式チェック付き）。デバイス識別・認証に使用 |
 | `status` | **追加**（`device_status` ENUM: `pending` / `active` / `revoked`）。登録フローの状態を管理 |
 | `created_at` | **追加**（`TIMESTAMPTZ NOT NULL DEFAULT now()`）。初回 enroll 日時。pending承認UIの「初回接続日時」表示に使用 |
-| `chk_device_status_invariants`（CHECK制約） | **追加**。`status` × `zone_id` の組み合わせをDBレベルで固定し、不正な状態（例：`active` なのに `zone_id IS NULL`）を作成不可にする |
-| `trg_enforce_device_state_machine`（トリガー） | **追加**。許可される状態遷移（`pending→active` / `active→revoked` / ゾーン削除・ユーザー削除に伴う自動遷移）以外をすべて拒否する。詳細は [devices](#devices) の「状態遷移ルール」を参照 |
+| `chk_device_status_invariants`（CHECK制約） | **追加**。`status` × `zone_id` × `user_id` の組み合わせをDBレベルで固定し、不正な状態（例：`active` なのに `zone_id IS NULL` または `user_id IS NULL`）を作成不可にする |
+| `trg_enforce_device_state_machine`（トリガー） | **追加**。許可される状態遷移（`pending→active` / `active→revoked` / ゾーン削除に伴う `active→pending` 自動遷移 / ユーザー削除に伴う `active`・`revoked`・`pending`〈所有者持ち〉→ `revoked` 自動遷移）以外をすべて拒否する。詳細は [devices](#devices) の「状態遷移ルール」を参照 |
 
 ### 定義しないことにしたもの
 
