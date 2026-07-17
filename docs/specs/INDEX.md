@@ -8,9 +8,9 @@ ESP32マイコンで取得したセンサーデータをクラウドに送信し
 
 | 仕様書 | バージョン | 内容 |
 |---|---|---|
-| [データモデル](DATA_MODEL.md) | v4 | DBスキーマ・テーブル定義・RLSポリシー・ESP32送信フォーマット |
-| [画面仕様書](SCREEN_SPEC.md) | v5 | 画面レイアウト・ルーティング・認証フロー・Realtimeリアルタイム更新 |
-| [技術選定仕様書](TECH_STACK.md) | v7 | 技術スタック・リポジトリ構成・開発環境（DevContainer）・Vercelデプロイ |
+| [データモデル](DATA_MODEL.md) | v5 | DBスキーマ・テーブル定義・RLSポリシー・ESP32送信フォーマット |
+| [画面仕様書](SCREEN_SPEC.md) | v6 | 画面レイアウト・ルーティング・認証フロー・Realtimeリアルタイム更新 |
+| [技術選定仕様書](TECH_STACK.md) | v8 | 技術スタック・リポジトリ構成・開発環境（DevContainer）・Vercelデプロイ |
 
 ---
 
@@ -26,6 +26,27 @@ ESP32（センサー計測）
                  ← Supabase Realtime（INSERT イベント購読）
                       → Next.js ダッシュボード（リアルタイム表示）
 ```
+
+### デバイス登録フロー（キーレス登録 / TOFU方式）
+
+ファームウェアに秘密情報（APIキー・登録キー）は一切持たせず、全デバイス同一バイナリで運用する。
+
+```
+ESP32 起動
+  └─ POST /enroll（無認証・{mac_address, firmware_ver} のみ送信）
+       → 未知のMAC: devices に status='pending' で新規作成（201）
+       → 既知のMAC: firmware_ver を更新するのみ（200・冪等）。revoked は403
+            ↓
+       ユーザーがダッシュボードの pending 一覧から名前入力・ゾーン割当のうえ承認
+            ↓
+       devices.status = 'active'（user_id・zone_id が確定）
+            ↓
+       以降 POST /readings はヘッダー X-Device-MAC のみで認証（active のみ受理）
+```
+
+過去に案A（MACクレーム方式 + 共有登録キー、issue #113 / PR #120）を検討したが Revert 済み（PR #123）。  
+共有登録キーの発行・焼き込み自体が不要になる案Bを採用している。  
+詳細 → [データモデル — devices](DATA_MODEL.md#devices)
 
 ### 技術スタック早見表
 
@@ -56,6 +77,7 @@ sensors → alerts
 - 計測値（`readings`）はraw値で保存。補正は`sensor_calibrations`テーブル追加で後対応
 - 主キーはUUID v7（時系列ソート可能。大量INSERTの多い`readings`でBTreeインデックス断片化を抑制）
 - オフライン判定閾値：15分（本番送信間隔10分の1.5倍）。`shared/constants.ts`で一元管理
+- `devices`はキーレス登録（TOFU方式）。`mac_address`で識別し、`status`（`pending`/`active`/`revoked`）で承認状態を管理
 
 詳細 → [データモデル](DATA_MODEL.md)
 
@@ -108,3 +130,4 @@ curl -X POST http://localhost:3001/start
 | `sensor_fault`検知ロジック | Edge Functionのコード追加のみ（スキーマ変更不要） |
 | ゾーン管理・植物マスタ管理画面（P2） | `/zones/[id]/settings`・`/settings/plants` |
 | PostgreSQL 18移行時のUUID v7 | `uuid_generate_v7()`を削除し組み込み`uuidv7()`に切り替え |
+| デバイス承認時の個体トークン発行（MACなりすまし対策の強化） | `devices`に`device_token_hash`カラムを追加し、承認レスポンスでデバイスに返却・NVS保存させる方式。詳細は[データモデル — devices](DATA_MODEL.md#devices) |
