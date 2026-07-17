@@ -2,8 +2,11 @@ import { createClient } from "@supabase/supabase-js"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-device-mac",
 }
+
+// デバイス識別に使うヘッダー名（docs/specs/DATA_MODEL.md「フロー2：センサーデータ送信（readings）」参照）
+const DEVICE_MAC_HEADER = "X-Device-MAC"
 
 interface SensorReading {
   sensor_type: string
@@ -20,14 +23,6 @@ interface ProcessedSensor {
   sensor_type: string
   sensor_id: string
   value: number
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input)
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -51,27 +46,30 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  // 1. APIキー認証
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader?.startsWith("Bearer ")) {
+  // 1. デバイス認証（X-Device-MAC ヘッダー）
+  const macAddress = req.headers.get(DEVICE_MAC_HEADER)
+  if (!macAddress) {
     return jsonResponse({ error: "Unauthorized" }, 401)
   }
-
-  const apiKey = authHeader.slice(7)
-  if (!apiKey) {
-    return jsonResponse({ error: "Unauthorized" }, 401)
-  }
-
-  const apiKeyHash = await sha256Hex(apiKey)
 
   const { data: device } = await supabase
     .from("devices")
-    .select("id, zone_id")
-    .eq("api_key_hash", apiKeyHash)
+    .select("id, zone_id, status")
+    .eq("mac_address", macAddress)
     .maybeSingle()
 
   if (!device) {
     return jsonResponse({ error: "Unauthorized" }, 401)
+  }
+
+  if (device.status !== "active") {
+    const message = device.status === "revoked" ? "Device is revoked" : "Device not approved"
+    return jsonResponse({ error: message }, 403)
+  }
+
+  // zone_id はバックエンド（devices テーブル）から解決する。ESP32からのボディ送信は不要
+  if (!device.zone_id) {
+    return jsonResponse({ error: "Zone not assigned" }, 403)
   }
 
   // ゾーンの is_active チェック（非アクティブゾーンからのデータ送信を拒否）
@@ -81,11 +79,7 @@ Deno.serve(async (req) => {
     .eq("id", device.zone_id)
     .maybeSingle()
 
-  if (!zone) {
-    return jsonResponse({ error: "Zone not found" }, 404)
-  }
-
-  if (!zone.is_active) {
+  if (!zone?.is_active) {
     return jsonResponse({ error: "Zone is inactive" }, 403)
   }
 
