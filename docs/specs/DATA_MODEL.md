@@ -1,11 +1,12 @@
-# データモデル v4
+# データモデル v5
 
 ミニ農園モニタリングシステムのデータベース設計書。  
 水耕・土壌の両栽培方式、複数品種、1ゾーン複数ESP32に対応。
 
 > **このファイルについて**  
-> `DATA_MODEL_v3.md`（v3）を精査した改訂版。  
-> 変更の概要は末尾の「[v3 からの変更点](#v3-からの変更点)」を参照。
+> `DATA_MODEL_v4.md`（v4）を精査した改訂版。  
+> デバイス登録を APIキー方式からキーレス登録（案B / TOFU: Trust On First Use 方式）に変更。  
+> 変更の概要は末尾の「[v4 からの変更点](#v4-からの変更点)」を参照。
 
 ---
 
@@ -15,7 +16,7 @@
 |---|---|
 | `users` | ユーザー認証 |
 | `zones` | 栽培エリア（水耕 / 土壌） |
-| `devices` | ゾーンに紐づくESP32 |
+| `devices` | ゾーンに紐づくESP32（MACアドレスで識別、キーレス登録） |
 | `sensor_type_masters` | センサー種別マスタ（表記揺れ防止） |
 | `sensors` | デバイスに物理的に取り付けたセンサー |
 | `readings` | センサーの時系列計測値（rawを保存） |
@@ -129,28 +130,81 @@ CREATE TABLE zones (
 ### devices
 
 ゾーンに設置するESP32。1ゾーンに複数台置ける。  
-認証はデバイス単位で `api_key_hash` を発行する。
+認証はキーレス登録（案B / TOFU: Trust On First Use）方式で行う。  
+ファームウェアに秘密情報（APIキー・登録キーいずれも）は一切持たせず、全デバイス同一バイナリで運用する。デバイスの識別は `WiFi.macAddress()` で取得できる MACアドレスのみで行う。
 
 ```sql
-CREATE TABLE devices (
-    id            UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
-    zone_id       UUID NOT NULL REFERENCES zones(id) ON DELETE RESTRICT,
-    name          VARCHAR(100),                -- 例: "水質担当"
-    api_key_hash  VARCHAR(64) NOT NULL UNIQUE, -- SHA-256ハッシュ。プレーンテキストは発行時のみ表示
-    firmware_ver  VARCHAR(20),
-    last_seen_at  TIMESTAMPTZ                  -- readings受信時に自動更新。15分超でオフライン扱い
+-- devices.status の ENUM
+CREATE TYPE device_status AS ENUM (
+    'pending',   -- 未承認（enroll 済み・ユーザー / ゾーン未割り当て）
+    'active',    -- 承認済み（ユーザー・ゾーンに割り当て済み・データ送信可）
+    'revoked'    -- 無効化（ユーザーが手動で無効化）
 );
+
+CREATE TABLE devices (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    zone_id      UUID REFERENCES zones(id) ON DELETE SET NULL,       -- NULL = 未割り当て（pending、またはゾーン削除後）
+    user_id      UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- NULL = 未承認（pending）
+    mac_address  VARCHAR(17) NOT NULL UNIQUE
+        CHECK (mac_address ~ '^([0-9A-F]{2}:){5}[0-9A-F]{2}$'),      -- 例: "AA:BB:CC:DD:EE:FF"（コロン区切り大文字）
+    name         VARCHAR(100),                 -- 例: "水質担当"（承認時にユーザーが入力、任意）
+    status       device_status NOT NULL DEFAULT 'pending',
+    firmware_ver VARCHAR(20),
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),  -- 初回 enroll 日時（pending承認UIでの「初回接続日時」表示に使用）
+    last_seen_at TIMESTAMPTZ                   -- readings受信時に自動更新。15分超でオフライン扱い
+);
+
+-- ゾーン削除で zone_id が NULL に戻った active デバイスを pending に戻す。
+-- user_id はそのまま保持する（元の所有者が再度ゾーンを割り当てるだけで復旧できるようにするため）。
+CREATE OR REPLACE FUNCTION reset_device_status_on_zone_unassign()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.zone_id IS NULL AND OLD.zone_id IS NOT NULL AND NEW.status = 'active' THEN
+        NEW.status := 'pending';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_reset_device_status_on_zone_unassign
+    BEFORE UPDATE ON devices
+    FOR EACH ROW
+    EXECUTE FUNCTION reset_device_status_on_zone_unassign();
 ```
 
-> **ESP32からの送信**  
-> リクエストヘッダーに `Authorization: Bearer {api_key}` を付与する。  
-> バックエンドはapi_keyをSHA-256でハッシュ化して `api_key_hash` と照合する。  
-> `zone_id` はバックエンドが `device_id` から引くため、ESP32は知らなくてよい。
+> **キーレス登録（TOFU）フロー**  
+> 1. ESP32起動時に無認証で `POST /enroll` へ `{mac_address, firmware_ver}` を送信する（毎回・冪等）  
+> 2. 未知のMACなら `devices` に `status='pending'`, `user_id=NULL`, `zone_id=NULL` で新規作成する（201）。既知のMAC（`pending` / `active`）は `firmware_ver` を更新するのみ（200）。`revoked` は403、MAC形式不正は400を返す  
+> 3. ダッシュボードの pending デバイス一覧をユーザーが確認し、名前入力・ゾーン割当のうえ承認すると `user_id=承認者`, `zone_id=割当先`, `status='active'` に更新される  
+> 4. 以降 `POST /readings` はヘッダー `X-Device-MAC` のみで認証する（`status='active'` のみ受理）。詳細は [ESP32 送信フォーマット](#esp32-送信フォーマット) を参照
+
+> **`enrollment_keys` テーブルは定義しない**  
+> 過去に検討した案A（MACクレーム方式）では「共有登録キーを発行してファームに焼き込む」手順が残っていたが、  
+> 本番運用をしておらず旧方式との互換性も不要なため、キーの発行・焼き込み自体をなくす案B（キーレス登録）を採用した。  
+> `enroll` は無認証になるが、MAC形式バリデーション・`revoked` ステータスによるブロックで許容できるリスクと判断している（詳細は [セキュリティ上のトレードオフと緩和策](#セキュリティ上のトレードオフと緩和策) を参照）。
+
+> **`zone_id` / `user_id` の NULL 許容**  
+> `pending` 状態では両方 NULL。`zone_id` の FK は `ON DELETE SET NULL` のため、ゾーンが削除されると `zone_id` が NULL に戻り、トリガーにより `status` も `pending` に戻る（`user_id` は保持されるため、元の所有者にのみ再表示される）。
 
 > **オフライン判定の閾値について**  
 > 本番の送信間隔は10分のため、閾値は送信間隔の1.5倍である15分に設定する。  
 > 送信間隔を変更した場合は、この閾値も合わせて見直すこと。  
 > 閾値は `OFFLINE_THRESHOLD_MINUTES` 定数としてバックエンド・フロントエンドで一元管理する。
+
+### セキュリティ上のトレードオフと緩和策
+
+`enroll` エンドポイントを無認証にすることで生じるリスクと、その緩和策。
+
+| リスク | 緩和策 |
+|---|---|
+| 任意の第三者が無関係なMACを大量に `pending` 登録できる（スパム） | MAC形式バリデーション（400で弾く）。ログイン自体を許可リストで絞る仕組み（#109）と併用し、承認できるユーザーを限定する |
+| MACアドレスのなりすまし（他者のデバイスのMACを詐称して `readings` を送信） | 現行仕様では防げない。実害が出た場合は `revoked` ステータスで対象MACを個別にブロックする運用で対応する |
+| 一度 `revoked` にしたデバイスが再度 enroll を試みる | `enroll` 側で `revoked` を検知したら403を返しブロックする（`pending` への巻き戻りを防ぐ） |
+| 放置された `pending` レコードがテーブルに溜まり続ける | 本仕様では未実装。将来的に「作成から N日経過した `pending` を定期削除する」pg_cron ジョブの追加を検討する（任意） |
+
+> **将来拡張（未実装）：個体トークンによるなりすまし対策**  
+> 承認時にサーバーがランダムな個体トークンを発行し、レスポンスでデバイスに返却、デバイスがNVSに保存して以降 `X-Device-MAC` と併せて送信する方式にすれば、MACなりすまし対策を強化できる。  
+> 今回はスコープ外とし、言及のみに留める。実装する場合は `devices` に `device_token_hash` カラムを追加する形になる見込み。
 
 ---
 
@@ -386,14 +440,16 @@ CREATE TABLE alerts (
 
 ```
 users
- └─[1:N]─ zones
-            ├─[1:N]─ devices
-            │          └─[1:N]─ sensors ──[1:N]─ readings
-            │                      │
-            │          sensor_type_masters ──[1:N]─ sensors
-            │                      └─[1:N]─ plant_thresholds
-            │
-            └─[1:N]─ zone_plants
+ ├─[1:N]─ zones
+ │          ├─[1:N]─ devices（zone_id NULL 許容。ゾーン削除で NULL に戻る）
+ │          │          └─[1:N]─ sensors ──[1:N]─ readings
+ │          │                      │
+ │          │          sensor_type_masters ──[1:N]─ sensors
+ │          │                      └─[1:N]─ plant_thresholds
+ │          │
+ │          └─[1:N]─ zone_plants
+ │
+ └─[1:N]─ devices（user_id NULL 許容。pending 中は未割り当て）
 
 sensors ──[1:N]─ alerts
 
@@ -405,9 +461,49 @@ plants ──[1:N]── zone_plants
 
 ## ESP32 送信フォーマット
 
+キーレス登録（TOFU）方式では **enroll** と **readings** の2フローに分かれる。  
+ファームウェアに秘密情報（APIキー・登録キー）は一切持たせない。
+
+### フロー1：デバイス登録（enroll）
+
+ESP32起動時に毎回実行する（無認証・冪等）。
+
+```json
+POST /api/enroll
+Content-Type: application/json
+
+{
+  "mac_address": "AA:BB:CC:DD:EE:FF",
+  "firmware_ver": "1.0.0"
+}
+```
+
+**レスポンス**
+
+| ステータス | 意味 |
+|---|---|
+| `201 Created` | 未知のMAC。`status='pending'`, `user_id=NULL`, `zone_id=NULL` で新規作成 |
+| `200 OK` | 既知のMAC（`pending` / `active`）。`firmware_ver` を更新するのみ。冪等 |
+| `403 Forbidden` | 既知のMACが `revoked` 状態 |
+| `400 Bad Request` | `mac_address` の形式不正 |
+
+```json
+// 201 / 200 共通
+{ "status": "pending", "device_id": "..." }
+```
+
+> **無認証であることについて**  
+> 案A（MACクレーム方式）で必要だった共有登録キーの発行・焼き込みを廃止するため、`enroll` はあえて無認証にしている。  
+> リスクと緩和策は [セキュリティ上のトレードオフと緩和策](#セキュリティ上のトレードオフと緩和策) を参照。
+
+### フロー2：センサーデータ送信（readings）
+
+`status='active'` のデバイスのみ受理する。ヘッダー `X-Device-MAC` のみで認証する（APIキー・登録キーいずれも不要）。
+
 ```json
 POST /api/readings
-Authorization: Bearer {api_key}
+X-Device-MAC: AA:BB:CC:DD:EE:FF
+Content-Type: application/json
 
 {
   "timestamp": "2026-05-26T10:00:00Z",
@@ -416,21 +512,32 @@ Authorization: Bearer {api_key}
     { "sensor_type": "ph",         "value": 6.2 },
     { "sensor_type": "water_temp", "value": 22.5 }
   ],
-  "idempotency_key": "device_abc_1748253600"
+  "idempotency_key": "AA:BB:CC:DD:EE:FF_1748253600"
 }
 ```
+
+**エラーケース**
+
+| ステータス | 原因 |
+|---|---|
+| `401 Unauthorized` | `X-Device-MAC` の値が `devices` に存在しない |
+| `403 Forbidden` | デバイスが `pending`（未承認）または `revoked` |
+| `403 Forbidden` | `zone_id IS NULL`（ゾーン未割り当て・削除後） または `zones.is_active = false`（ゾーン休止中） |
+
+> `zone_id` はバックエンドが `devices` テーブルから解決するため、ESP32は送信不要。
 
 ### Wi-Fi断絶からの復帰時（バッチ送信）
 
 ```json
 POST /api/readings/batch
-Authorization: Bearer {api_key}
+X-Device-MAC: AA:BB:CC:DD:EE:FF
+Content-Type: application/json
 
 {
   "batches": [
     {
       "timestamp": "2026-05-26T09:00:00Z",
-      "idempotency_key": "device_abc_1748250000",
+      "idempotency_key": "AA:BB:CC:DD:EE:FF_1748250000",
       "readings": [
         { "sensor_type": "ec", "value": 1.7 },
         { "sensor_type": "ph", "value": 6.3 }
@@ -443,6 +550,33 @@ Authorization: Bearer {api_key}
 ---
 
 ## Edge Function 挙動仕様
+
+### `enroll` エンドポイント（`POST /api/enroll`）
+
+1. `mac_address` の形式チェック（`^([0-9A-F]{2}:){5}[0-9A-F]{2}$` 正規表現）
+   - 形式不正 → `400 Bad Request`
+2. `devices` テーブルで `mac_address` を検索する
+   - 存在しない → `INSERT`（`status='pending'`, `user_id=NULL`, `zone_id=NULL`）。`201 Created`
+   - 存在する（`pending` / `active`）→ `firmware_ver` のみ更新。`200 OK`（冪等）
+   - 存在する（`revoked`）→ `403 Forbidden`
+
+> Edge Function 内では Service Role Key で RLS をバイパスする。リクエストに Auth セッションはない（無認証エンドポイント）。
+
+### `readings` エンドポイント（`POST /api/readings`）
+
+1. `X-Device-MAC` ヘッダーから MAC アドレスを取得する
+2. `devices` テーブルで `mac_address` を照合する
+   - 存在しない → `401 Unauthorized`
+   - `status = 'pending'` → `403 Forbidden`（未承認）
+   - `status = 'revoked'` → `403 Forbidden`
+3. `devices.zone_id` を確認する
+   - `NULL` → `403 Forbidden`（ゾーン未割り当て・削除後）
+   - 取得できた場合は `zones.is_active` を確認し、`false` なら `403 Forbidden`（ゾーン休止中）
+4. `device_id` × `sensor_type_id` で `sensors` テーブルを検索してセンサーを特定する
+5. `readings` を INSERT する
+6. `devices.last_seen_at = now()` を同一トランザクション内で更新する
+
+> `zone_id` はバックエンドが `devices` レコードから自動で引き込む。ESP32 は送信不要。
 
 ### `last_seen_at` の更新
 
@@ -509,12 +643,12 @@ CREATE POLICY "anyone can read" ON sensor_type_masters
 
 **ユーザーデータ**（自分のデータのみ）
 
-`zones.user_id = auth.uid()` を起点に、すべてのテーブルで所有者を検証する。
+`zones.user_id = auth.uid()` を起点に、すべてのテーブルで所有者を検証する（`devices` のみ例外。後述）。
 
 | テーブル | ポリシーの基準 |
 |---|---|
 | `zones` | `zones.user_id = auth.uid()` |
-| `devices` | `zones.user_id = auth.uid()`（zones を JOIN） |
+| `devices` | `pending`（`user_id IS NULL`）は認証済み全員が閲覧・承認可能。`active` 以降は `devices.user_id = auth.uid()`（フラット述語） |
 | `sensors` | `zones.user_id = auth.uid()`（devices → zones を JOIN） |
 | `readings` | `zones.user_id = auth.uid()`（sensors → devices → zones を JOIN） |
 | `zone_plants` | `zones.user_id = auth.uid()`（zones を JOIN） |
@@ -522,42 +656,97 @@ CREATE POLICY "anyone can read" ON sensor_type_masters
 | `plants` | `plants.created_by = auth.uid()` |
 | `plant_thresholds` | `plants.created_by = auth.uid()`（plants を JOIN） |
 
+`devices` は pending の扱いが特殊なため、コマンドごとに個別のポリシーを定義する。  
+`FOR ALL` は使わず、`FOR SELECT / UPDATE` に分割し、`UPDATE` のみ `WITH CHECK` で割当先ゾーンの所有権を確認する（#114 で確立した方式を踏襲）。
+
 ```sql
--- 例：devices
+-- devices
 ALTER TABLE devices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "owner only" ON devices
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM zones
-      WHERE zones.id = devices.zone_id
-        AND zones.user_id = auth.uid()
+
+-- SELECT: pending（未承認・user_id IS NULL）は認証済み全員が閲覧可能。
+-- active / revoked は所有者のみ閲覧可能。
+CREATE POLICY "select pending or own devices" ON devices
+  FOR SELECT USING (
+    user_id IS NULL OR user_id = auth.uid()
+  );
+
+-- UPDATE: 承認（pending → active）・名前編集・revoke・ゾーン再割当を1本のポリシーでカバーする。
+-- USING で「pending または自分の所有物」のみ更新対象にできることを保証し、
+-- WITH CHECK で「更新後は自分の所有物になっていること」「割当先ゾーンが自分のものであること」を保証する。
+CREATE POLICY "approve or manage own devices" ON devices
+  FOR UPDATE USING (
+    user_id IS NULL OR user_id = auth.uid()
+  )
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (
+      zone_id IS NULL OR EXISTS (
+        SELECT 1 FROM zones
+        WHERE zones.id = devices.zone_id
+          AND zones.user_id = auth.uid()
+      )
     )
   );
+
+-- INSERT / DELETE: 定義しない（デフォルト拒否）。
+-- devices の新規作成は enroll エンドポイントが Service Role Key で行うため、
+-- 認証済みクライアントからの直接 INSERT / DELETE は不要かつ許可しない。
 ```
+
+> **`FOR ALL` を使わない理由**  
+> `FOR ALL` ポリシーと `FOR UPDATE WITH CHECK` を併用すると OR 結合で `WITH CHECK` が事実上バイパスされる（issue #114 で発覚）。  
+> コマンド別（SELECT / INSERT / UPDATE / DELETE）にポリシーを分割することで、`UPDATE` の `WITH CHECK`（ゾーン所有権チェック）が確実に効くようにする。
+
+> **`pending` を全員に公開する設計について**  
+> ログイン自体を許可リストで絞る仕組み（#109）が別途あるため、ログイン済みユーザー全員に `pending` デバイスの閲覧・承認を許可しても実害は小さいと判断している。  
+> 複数ユーザー運用になった場合は、`pending` の可視性を絞る設計（例：組織単位のスコープ）への見直しが必要になる。
 
 ### Edge Function での DB 操作
 
-ESP32 からのリクエストは Supabase Auth のセッションを持たないため、  
+ESP32 からのリクエスト（`enroll` / `readings` いずれも）は Supabase Auth のセッションを持たないため、  
 Edge Function 内では **Service Role Key** を使って RLS をバイパスする。  
-デバイス認証（`api_key_hash` の照合）は Edge Function 側で完結させる。
+デバイス認証（MACアドレスの照合・`status` チェック）は Edge Function 側で完結させる。
 
 ---
 
-## v3 からの変更点
+## v4 からの変更点
 
-### 変更
+デバイス登録を APIキー方式からキーレス登録（案B / TOFU方式）に変更した。  
+過去に案A（MACクレーム方式 + 共有登録キー、issue #113 / PR #120）を仕様化したが PR #123 で Revert 済み。  
+案Aでも「共有登録キーを発行してファームに焼き込む」手順が残っており不満が解消されなかったため、キーの発行・焼き込み自体をなくす案Bを採用した。  
+本番運用をしていないため旧方式（APIキー方式・案A）との互換性は考慮しない。
 
-| 対象 | 内容 |
+### `devices` スキーマ変更（認証方式の転換）
+
+| カラム | 変更内容 |
 |---|---|
-| 全テーブルの主キー | `gen_random_uuid()`（UUID v4）→ `uuid_generate_v7()`（UUID v7）に変更。大量INSERTが発生する `readings` テーブルのBTreeインデックス断片化を抑制 |
-| `devices.last_seen_at` コメント | 「5分超でオフライン扱い」→「15分超でオフライン扱い」に修正。本番送信間隔（10分）より閾値（5分）が短く、正常動作中でも常にオフライン表示されるバグを修正 |
+| `api_key_hash` | **削除**。個体ごとの API キー方式を廃止 |
+| `zone_id` | `NOT NULL` → **NULL 許容化**。FK を `ON DELETE RESTRICT` → `ON DELETE SET NULL` に変更。ゾーン削除時にトリガーで `status` を `pending` に戻す |
+| `user_id` | **追加**（NULL 許容）。`auth.users(id)` を参照。`pending` 中は `NULL`、承認時に承認者を設定 |
+| `mac_address` | **追加**（`VARCHAR(17) UNIQUE NOT NULL`、形式チェック付き）。デバイス識別・認証に使用 |
+| `status` | **追加**（`device_status` ENUM: `pending` / `active` / `revoked`）。登録フローの状態を管理 |
+| `created_at` | **追加**（`TIMESTAMPTZ NOT NULL DEFAULT now()`）。初回 enroll 日時。pending承認UIの「初回接続日時」表示に使用 |
 
-### 追加
+### 定義しないことにしたもの
 
-| 対象 | 内容 |
+| 対象 | 理由 |
 |---|---|
-| UUID v7 関数セクション | `uuid_generate_v7()` の PL/pgSQL 実装を追加。PostgreSQL 17 対応。PostgreSQL 18 移行時の対応方針を注記 |
-| オフライン判定の定数管理 | `OFFLINE_THRESHOLD_MIN = 15` を `shared/constants.ts` で一元管理する方針を追加。送信間隔変更時の連動更新を明記 |
+| `enrollment_keys` テーブル | 案A（MACクレーム方式）で検討したが、共有登録キーの発行・焼き込み自体を案Bで廃止したため不要 |
+| デバイス個体の APIキー | キーレス登録によりファームウェアに秘密情報を一切持たせない方針のため不要 |
+
+### RLS の変更
+
+| 対象 | 変更内容 |
+|---|---|
+| `devices` | `zones.user_id = auth.uid()`（zones JOIN・`FOR ALL`）→ `SELECT`/`UPDATE` にコマンド分割。`pending`（`user_id IS NULL`）は認証済み全員が閲覧・承認可能、`active` 以降は `devices.user_id = auth.uid()` のフラット述語に変更。`UPDATE` の `WITH CHECK` で割当先ゾーンの所有権を確認 |
+| `devices` の `INSERT` / `DELETE` | ポリシーを定義せずデフォルト拒否に変更。デバイス作成は `enroll` エンドポイントが Service Role Key で行うため、認証済みクライアントからの直接操作は不要 |
+
+### ESP32 送信フロー変更
+
+| 変更前 | 変更後 |
+|---|---|
+| `Authorization: Bearer {api_key}` ヘッダーで認証 | `enroll`（無認証・毎回冪等）+ `X-Device-MAC` ヘッダーで `readings` を認証 |
+| デバイスごとに固有の API キーをファームに焼き込む | 全デバイスに秘密情報なしの同一バイナリを書き込む（キーの発行・焼き込み自体が不要） |
 
 ### 変更なし（後から変えると痛いため維持）
 
@@ -567,7 +756,7 @@ Edge Function 内では **Service Role Key** を使って RLS をバイパスす
 | `sensor_type_masters` をFKテーブルにする | 文字列フリーにすると表記揺れが混入し、後で直せない |
 | `sensors` の論理削除（`is_active`） | 物理削除すると過去の `readings` が孤立する |
 | `idempotency_key` on `readings` | Wi-Fi断絶からの復帰時に重複が混入すると過去データが汚染される |
-| `ON DELETE RESTRICT` 統一（`plant_thresholds` を除く） | 意図しないカスケード削除を防ぐ。`plant_thresholds.plant_id` のみ `ON DELETE CASCADE`（植物削除時に閾値も一緒に削除される挙動が自然なため） |
+| `ON DELETE RESTRICT` 統一（`plant_thresholds`・`devices.zone_id` を除く） | 意図しないカスケード削除を防ぐ。`plant_thresholds.plant_id` は `ON DELETE CASCADE`（植物削除時に閾値も一緒に削除される挙動が自然なため）。`devices.zone_id` は `ON DELETE SET NULL`（ゾーン削除時にデバイスを pending へ戻すため。詳細は「[v4 からの変更点](#v4-からの変更点)」を参照） |
 | `(device_id, sensor_type_id)` のPartial Unique Index | バックエンドのsensor特定ロジックの前提。後から入れると既存の重複を先に直す必要がある |
 | `alert_type` ENUMに `sensor_fault` を残す | 後から追加するとENUMの変更が必要になる。値だけ確保しておくコストはゼロ |
 
