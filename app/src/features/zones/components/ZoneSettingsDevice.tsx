@@ -1,109 +1,85 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { Check, Copy, Key, Pencil, Plus, X } from 'lucide-react'
-import { toast } from 'sonner'
+import { Check, Pencil, ShieldOff, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { addDevice, type AddDeviceState } from '../api/addDevice'
-import { reissueApiKey, type ReissueApiKeyState } from '../api/reissueApiKey'
+import { approveDevice, type ApproveDeviceState } from '../api/approveDevice'
+import { revokeDevice, type RevokeDeviceState } from '../api/revokeDevice'
 import { updateDeviceName, type UpdateDeviceNameState } from '../api/updateDeviceName'
-import type { Device } from '@/types'
+import { formatDateTime } from '../utils'
+import type { Device, PendingDevice } from '../types'
 
-// ---- API Key Copy Button ----
+// ---- Pending Device Card (approve) ----
 
-function ApiKeyCopyButton({ apiKey }: { apiKey: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(apiKey)
-      setCopied(true)
-      toast.success('APIキーをコピーしました')
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      toast.error('コピーに失敗しました')
-    }
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleCopy}
-      className="mt-2 text-amber-800 border-amber-300 hover:bg-amber-100"
-      aria-label="APIキーをコピー"
-    >
-      {copied ? (
-        <>
-          <Check className="h-3.5 w-3.5" />
-          コピー済み
-        </>
-      ) : (
-        <>
-          <Copy className="h-3.5 w-3.5" />
-          コピー
-        </>
-      )}
-    </Button>
-  )
-}
-
-// ---- Add Device Form ----
-
-type AddDeviceFormProps = {
+type PendingDeviceCardProps = {
+  device: PendingDevice
   zoneId: string
 }
 
-const initialAddState: AddDeviceState = { success: false }
+const initialApproveState: ApproveDeviceState = { success: false }
 
-function AddDeviceForm({ zoneId }: AddDeviceFormProps) {
-  const formRef = useRef<HTMLFormElement>(null)
-  const [state, formAction, isPending] = useActionState(addDevice, initialAddState)
-
-  useEffect(() => {
-    if (state.success) {
-      formRef.current?.reset()
-    }
-  }, [state.success])
+function PendingDeviceCard({ device, zoneId }: PendingDeviceCardProps) {
+  const [name, setName] = useState('')
+  const [confirming, setConfirming] = useState(false)
+  const [state, formAction, isPending] = useActionState(approveDevice, initialApproveState)
 
   return (
-    <div className="space-y-4">
-      <form ref={formRef} action={formAction} className="space-y-4">
-        <input type="hidden" name="zone_id" value={zoneId} />
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="device-name" className="text-sm font-medium text-gray-700">
-            デバイス名（任意）
-          </label>
+    <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="font-mono text-sm text-gray-800">{device.mac_address}</span>
+        <span className="text-xs text-gray-500">
+          初回接続: {formatDateTime(device.created_at)}
+        </span>
+        {device.firmware_ver && (
+          <span className="text-xs text-gray-500">fw: {device.firmware_ver}</span>
+        )}
+      </div>
+
+      {!confirming ? (
+        <div className="flex items-center gap-2">
           <Input
-            id="device-name"
-            name="name"
             type="text"
-            placeholder="例: 温度センサーユニット01"
-            className="focus:border-green-500 focus:ring-green-500"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="デバイス名（任意）"
+            className="flex-1 focus:border-green-500 focus:ring-green-500"
+            disabled={isPending}
           />
+          <Button
+            type="button"
+            variant="green"
+            size="sm"
+            onClick={() => setConfirming(true)}
+            disabled={isPending}
+          >
+            <Check className="h-3.5 w-3.5" />
+            このゾーンに承認
+          </Button>
         </div>
-        {state.error && <p className="text-sm text-red-500">{state.error}</p>}
-        <Button
-          type="submit"
-          variant="green"
-          disabled={isPending}
-        >
-          <Plus className="h-4 w-4" />
-          {isPending ? '追加中...' : 'デバイスを追加'}
-        </Button>
-      </form>
-      {state.success && state.apiKey && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-          <p className="mb-1 text-sm font-medium text-amber-800">デバイスを追加しました</p>
-          <p className="mb-2 text-xs text-amber-700">
-            ⚠ APIキーは一度しか表示されません。必ずコピーして保存してください。
+      ) : (
+        <div className="space-y-2 rounded-md border border-green-200 bg-green-50 p-3">
+          <p className="text-sm text-green-800">
+            このデバイスをこのゾーンに承認しますか？
           </p>
-          <code className="block break-all rounded bg-amber-100 px-3 py-2 font-mono text-xs text-amber-900">
-            {state.apiKey}
-          </code>
-          <ApiKeyCopyButton apiKey={state.apiKey} />
+          {state.error && <p className="text-xs text-red-500">{state.error}</p>}
+          <form action={formAction} className="flex gap-2">
+            <input type="hidden" name="device_id" value={device.id} />
+            <input type="hidden" name="zone_id" value={zoneId} />
+            <input type="hidden" name="name" value={name} />
+            <Button type="submit" variant="green" size="sm" disabled={isPending}>
+              {isPending ? '承認中...' : '承認する'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirming(false)}
+              disabled={isPending}
+            >
+              キャンセル
+            </Button>
+          </form>
         </div>
       )}
     </div>
@@ -179,69 +155,124 @@ function EditDeviceNameForm({ device, zoneId, onCancel }: EditDeviceNameFormProp
   )
 }
 
-// ---- Device Row (name edit + API key reissue) ----
+// ---- Revoke Device Button (destructive, with confirmation) ----
+
+type RevokeDeviceButtonProps = {
+  device: Device
+  zoneId: string
+}
+
+const initialRevokeState: RevokeDeviceState = { success: false }
+
+function RevokeDeviceButton({ device, zoneId }: RevokeDeviceButtonProps) {
+  const [confirming, setConfirming] = useState(false)
+  const [state, formAction, isPending] = useActionState(revokeDevice, initialRevokeState)
+
+  if (!confirming) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setConfirming(true)}
+        className="border-red-200 text-red-600 hover:bg-red-50"
+      >
+        <ShieldOff className="h-3.5 w-3.5" />
+        無効化する
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-red-600">本当に無効化しますか？</span>
+        <form action={formAction}>
+          <input type="hidden" name="device_id" value={device.id} />
+          <input type="hidden" name="zone_id" value={zoneId} />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending}
+            className="bg-red-600 text-white hover:bg-red-700"
+          >
+            {isPending ? '処理中...' : '無効化する'}
+          </Button>
+        </form>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setConfirming(false)}
+          disabled={isPending}
+        >
+          キャンセル
+        </Button>
+      </div>
+      {state.error && <p className="text-xs text-red-500">{state.error}</p>}
+    </div>
+  )
+}
+
+// ---- Status Badge ----
+
+function StatusBadge({ status }: { status: Device['status'] }) {
+  if (status === 'active') {
+    return (
+      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+        稼働中
+      </span>
+    )
+  }
+  return (
+    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      無効化済み
+    </span>
+  )
+}
+
+// ---- Device Row (registered device: name edit + revoke) ----
 
 type DeviceRowProps = {
   device: Device
   zoneId: string
 }
 
-const initialReissueState: ReissueApiKeyState = { success: false }
-
 function DeviceRow({ device, zoneId }: DeviceRowProps) {
   const [isEditingName, setIsEditingName] = useState(false)
-  const [state, formAction, isPending] = useActionState(reissueApiKey, initialReissueState)
+
+  if (isEditingName) {
+    return (
+      <EditDeviceNameForm
+        device={device}
+        zoneId={zoneId}
+        onCancel={() => setIsEditingName(false)}
+      />
+    )
+  }
+
+  const displayName = device.name ?? device.mac_address.replace(/:/g, '').slice(-6)
 
   return (
-    <div className="space-y-2">
-      {isEditingName ? (
-        <EditDeviceNameForm
-          device={device}
-          zoneId={zoneId}
-          onCancel={() => setIsEditingName(false)}
-        />
-      ) : (
-        <div className="flex items-center gap-3">
-          <span className="flex-1 text-sm text-gray-700">
-            {device.name ?? `デバイス (${device.id.slice(0, 8)}...)`}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditingName(true)}
-            aria-label="デバイス名を編集"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            編集
-          </Button>
-          <form action={formAction}>
-            <input type="hidden" name="device_id" value={device.id} />
-            <input type="hidden" name="zone_id" value={zoneId} />
-            <Button
-              type="submit"
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-            >
-              <Key className="h-3.5 w-3.5" />
-              {isPending ? '発行中...' : 'APIキー再発行'}
-            </Button>
-          </form>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-800">{displayName}</span>
+          <StatusBadge status={device.status} />
         </div>
-      )}
-      {!isEditingName && state.error && <p className="text-xs text-red-500">{state.error}</p>}
-      {!isEditingName && state.success && state.apiKey && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-1 text-xs text-amber-700">
-            ⚠ APIキーは一度しか表示されません。必ずコピーして保存してください。
-          </p>
-          <code className="block break-all rounded bg-amber-100 px-2 py-1.5 font-mono text-xs text-amber-900">
-            {state.apiKey}
-          </code>
-          <ApiKeyCopyButton apiKey={state.apiKey} />
-        </div>
-      )}
+        <span className="font-mono text-xs text-gray-500">{device.mac_address}</span>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setIsEditingName(true)}
+        aria-label="デバイス名を編集"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        編集
+      </Button>
+      {device.status === 'active' && <RevokeDeviceButton device={device} zoneId={zoneId} />}
     </div>
   )
 }
@@ -249,17 +280,32 @@ function DeviceRow({ device, zoneId }: DeviceRowProps) {
 // ---- Device Management Section ----
 
 type DeviceManagementSectionProps = {
+  pendingDevices: PendingDevice[]
   devices: Device[]
   zoneId: string
 }
 
-export function DeviceManagementSection({ devices, zoneId }: DeviceManagementSectionProps) {
+export function DeviceManagementSection({
+  pendingDevices,
+  devices,
+  zoneId,
+}: DeviceManagementSectionProps) {
+  const hasNothing = pendingDevices.length === 0 && devices.length === 0
+
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="mb-3 text-sm font-medium text-gray-700">デバイスを追加</h3>
-        <AddDeviceForm zoneId={zoneId} />
-      </div>
+      {pendingDevices.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-gray-700">
+            未承認デバイス（{pendingDevices.length}）
+          </h3>
+          <div className="space-y-3">
+            {pendingDevices.map((device) => (
+              <PendingDeviceCard key={device.id} device={device} zoneId={zoneId} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {devices.length > 0 && (
         <div>
@@ -272,6 +318,12 @@ export function DeviceManagementSection({ devices, zoneId }: DeviceManagementSec
             ))}
           </div>
         </div>
+      )}
+
+      {hasNothing && (
+        <p className="text-sm text-gray-500">
+          登録済み・未承認のデバイスはありません。ESP32を起動すると自動的に未承認デバイスとして表示されます。
+        </p>
       )}
     </div>
   )

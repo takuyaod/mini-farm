@@ -15,3 +15,22 @@ export function formatPlantingDate(dateStr: string): string {
     day: 'numeric',
   })
 }
+
+export function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isValidUuid(value: string): boolean {
+  return UUID_REGEX.test(value)
+}
+
+/** devices.name のバリデーション上限文字数（DATA_MODEL.md の devices.name VARCHAR(100) に合わせる） */
+export const DEVICE_NAME_MAX_LENGTH = 100
