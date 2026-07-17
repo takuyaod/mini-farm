@@ -30,6 +30,14 @@ function OfflineDot() {
   return <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-[#b9c1ba]" />
 }
 
+function RevokedBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-[#f0f1ef] px-2 py-0.5 text-[10.5px] font-medium text-content-muted ring-1 ring-inset ring-[#e6e9e5]">
+      無効化済み
+    </span>
+  )
+}
+
 export function DeviceStatus({ devices }: Props) {
   if (devices.length === 0) return null
 
@@ -46,9 +54,11 @@ export function DeviceStatus({ devices }: Props) {
       </div>
       <ul className="divide-y divide-[#eef1ed]">
         {devices.map((device) => {
-          const isOnline = device.last_seen_at
-            ? now - new Date(device.last_seen_at).getTime() <= offlineThresholdMs
-            : false
+          const isRevoked = device.status === 'revoked'
+          const isOnline =
+            !isRevoked && device.last_seen_at
+              ? now - new Date(device.last_seen_at).getTime() <= offlineThresholdMs
+              : false
           const activeSensorTypes = device.sensors
             .filter((s: Sensor) => s.is_active)
             .map((s: Sensor) => s.sensor_type_masters.label)
@@ -67,6 +77,9 @@ export function DeviceStatus({ devices }: Props) {
                   <span className="text-[13.5px] font-semibold text-content-primary">
                     {device.name ?? 'デバイス'}
                   </span>
+                  <span className="font-mono text-[11px] text-content-muted">
+                    {device.mac_address}
+                  </span>
                 </div>
                 {activeSensorTypes.length > 0 && (
                   <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -84,7 +97,9 @@ export function DeviceStatus({ devices }: Props) {
 
               {/* Connectivity + last seen */}
               <div className="flex items-center gap-4 text-[11.5px] tabular-nums text-content-secondary">
-                {isOnline ? (
+                {isRevoked ? (
+                  <RevokedBadge />
+                ) : isOnline ? (
                   <span className="inline-flex items-center gap-1">
                     <Wifi className="h-3 w-3" strokeWidth={2} />
                     接続中

@@ -9,6 +9,7 @@ import { DeviceManagementSection } from '@/features/zones/components/ZoneSetting
 import { ZoneSettingsSensor } from '@/features/zones/components/ZoneSettingsSensor'
 import { ZoneSettingsDanger } from '@/features/zones/components/ZoneSettingsDanger'
 import type { Device, Plant, Sensor } from '@/types'
+import type { PendingDevice } from '@/features/zones/types'
 
 export async function generateMetadata({
   params,
@@ -41,14 +42,21 @@ export default async function ZoneSettingsPage({
 
   if (!zone) notFound()
 
-  const [plantsRes, devicesRes, currentPlantRes] = await Promise.all([
+  const [plantsRes, devicesRes, pendingDevicesRes, currentPlantRes] = await Promise.all([
     supabase.from('plants').select('*').order('name', { ascending: true }),
     supabase.from('devices').select('*, sensors(*, sensor_type_masters(*))').eq('zone_id', id),
+    // pending 一覧は全ユーザー共通（RLS の「公開 pending」条件で公開分 + 自分の所有者持ち pending がフィルタされる）
+    supabase
+      .from('devices')
+      .select('id, mac_address, created_at, firmware_ver')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
     supabase.from('zone_plants').select('id').eq('zone_id', id).is('harvested_at', null).maybeSingle(),
   ])
 
   const plants = (plantsRes.data ?? []) as Plant[]
   const devices = (devicesRes.data ?? []) as Device[]
+  const pendingDevices = (pendingDevicesRes.data ?? []) as PendingDevice[]
   const hasCurrentPlant = currentPlantRes.data !== null
 
   const allActiveSensors = devices.flatMap((d) =>
@@ -93,7 +101,11 @@ export default async function ZoneSettingsPage({
 
           <section className="rounded-xl bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-medium text-gray-800">デバイス管理</h2>
-            <DeviceManagementSection devices={devices} zoneId={id} />
+            <DeviceManagementSection
+              pendingDevices={pendingDevices}
+              devices={devices}
+              zoneId={id}
+            />
           </section>
 
           {allActiveSensors.length > 0 && (

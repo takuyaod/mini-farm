@@ -58,11 +58,18 @@ export type Alert = {
   resolved_at: string | null
 }
 
+export type DeviceStatus = 'pending' | 'active' | 'revoked'
+
 export type Device = {
   id: string
-  zone_id: string
+  zone_id: string | null
   name: string | null
+  mac_address: string
+  status: DeviceStatus
+  user_id: string | null
+  firmware_ver: string | null
   last_seen_at: string | null
+  created_at: string
   sensors: Sensor[]
 }
 

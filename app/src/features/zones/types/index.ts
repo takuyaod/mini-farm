@@ -11,6 +11,9 @@ import type {
 
 export type { Alert, Device, Plant, PlantThreshold, Reading, Sensor, Zone, ZonePlant }
 
+/** ゾーン設定画面の「未承認デバイス」一覧に表示する pending デバイス（sensors 結合なし） */
+export type PendingDevice = Pick<Device, 'id' | 'mac_address' | 'created_at' | 'firmware_ver'>
+
 export type ZoneListItem = {
   zone: Zone
   deviceCount: number
