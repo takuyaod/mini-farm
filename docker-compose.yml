@@ -18,8 +18,7 @@ services:
       - "3001:3001"
     environment:
       SUPABASE_URL: http://host.docker.internal:54321
-      DEVICE_API_KEY: ${DEVICE_API_KEY}
-      USER_JWT_TOKEN: ${USER_JWT_TOKEN:-}
+      DEVICE_MAC: ${DEVICE_MAC}
     restart: unless-stopped
 
 volumes:
