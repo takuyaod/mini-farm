@@ -9,6 +9,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://host.docker.internal:54
 const DEFAULT_DEVICE_MAC = "AA:BB:CC:DD:EE:01";
 const DEVICE_MAC = process.env.DEVICE_MAC ?? DEFAULT_DEVICE_MAC;
 
+// supabase/functions/enroll, readings, readings-batch と同じ形式（大文字16進数・コロン区切り）
+const MAC_ADDRESS_REGEX = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/;
+if (!MAC_ADDRESS_REGEX.test(DEVICE_MAC)) {
+  console.error(`Invalid DEVICE_MAC format: "${DEVICE_MAC}". Expected format like "AA:BB:CC:DD:EE:01" (uppercase hex, colon-separated).`);
+  process.exit(1);
+}
+
 // enroll 送信時の firmware_ver（devices.firmware_ver は VARCHAR(20)。supabase/seed.sql の開発用デバイスと同じ値）
 const EMULATOR_FIRMWARE_VER = "0.0.1";
 
@@ -72,20 +79,23 @@ async function enroll(): Promise<boolean> {
       body: JSON.stringify({ mac_address: DEVICE_MAC, firmware_ver: EMULATOR_FIRMWARE_VER }),
     });
     const bodyText = await res.text();
-    console.log(`[${timestamp}] POST /enroll → ${res.status} ${bodyText}`);
 
     if (res.ok) {
+      // 成功時はレスポンス全文ではなく status フィールドのみをログに残す（将来のレスポンス拡張による内部情報漏洩を避ける）
+      let deviceStatus: string | undefined;
       try {
-        const parsed = JSON.parse(bodyText) as { status?: string };
-        if (parsed.status === "pending") {
-          console.warn(`[${timestamp}] Device ${DEVICE_MAC} is pending approval. ダッシュボードで承認するまで readings は 403 になります。`);
-        } else if (parsed.status === "active") {
-          console.log(`[${timestamp}] Device ${DEVICE_MAC} is active.`);
-        }
+        deviceStatus = (JSON.parse(bodyText) as { status?: string }).status;
       } catch {
-        // レスポンスボディのパースに失敗しても、生ログは既に出力済みなので握りつぶす
+        // レスポンスボディのパースに失敗しても致命的ではない
+      }
+      console.log(`[${timestamp}] POST /enroll → ${res.status} status=${deviceStatus ?? "unknown"}`);
+      if (deviceStatus === "pending") {
+        console.warn(`[${timestamp}] Device ${DEVICE_MAC} is pending approval. ダッシュボードで承認するまで readings は 403 になります。`);
+      } else if (deviceStatus === "active") {
+        console.log(`[${timestamp}] Device ${DEVICE_MAC} is active.`);
       }
     } else {
+      // 失敗時は原因調査のためレスポンス本文も出力する
       console.error(`[${timestamp}] enroll failed (${res.status}): ${bodyText}`);
     }
 
@@ -138,23 +148,45 @@ async function postBatch(count: number) {
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;
-let state: "running" | "stopped" = "stopped";
+let state: "running" | "starting" | "stopped" = "stopped";
+// enroll 中に届いた並行 /start をこの Promise に相乗りさせ、setInterval の多重生成を防ぐ
+let startPromise: Promise<boolean> | null = null;
 
-/** enroll が成功（2xx）した場合のみ送信を開始する。失敗時は送信を開始しない */
+/**
+ * enroll が成功（2xx）した場合のみ送信を開始する。失敗時は送信を開始しない。
+ * 状態遷移の判定・排他制御はこの関数に集約し、呼び出し側（ルートハンドラー）は結果だけを見る。
+ */
 async function start(): Promise<boolean> {
   if (state === "running") return true;
+  if (startPromise) return startPromise;
 
-  const enrolled = await enroll();
-  if (!enrolled) {
-    console.error("[emulator] enroll failed. Not starting.");
-    return false;
+  state = "starting";
+  startPromise = (async () => {
+    const enrolled = await enroll();
+
+    // enroll 待機中に stop() が呼ばれていた場合は、そのまま送信を開始しない
+    if (state !== "starting") {
+      return false;
+    }
+
+    if (!enrolled) {
+      state = "stopped";
+      console.error("[emulator] enroll failed. Not starting.");
+      return false;
+    }
+
+    state = "running";
+    // 起動直後に1回即時送信し、その後インターバル開始
+    postReading();
+    timer = setInterval(postReading, DEV_INTERVAL_MS);
+    return true;
+  })();
+
+  try {
+    return await startPromise;
+  } finally {
+    startPromise = null;
   }
-
-  state = "running";
-  // 起動直後に1回即時送信し、その後インターバル開始
-  postReading();
-  timer = setInterval(postReading, DEV_INTERVAL_MS);
-  return true;
 }
 
 function stop() {
@@ -170,11 +202,6 @@ const app = express();
 app.use(express.json());
 
 app.post("/start", async (_req, res) => {
-  if (state === "running") {
-    res.json({ status: state });
-    return;
-  }
-
   const started = await start();
   if (!started) {
     res.status(502).json({ status: state, message: "enroll failed" });
