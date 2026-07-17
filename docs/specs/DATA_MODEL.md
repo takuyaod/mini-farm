@@ -571,7 +571,7 @@ Content-Type: application/json
 | `201 Created` | 未知のMAC。`status='pending'`, `user_id=NULL`, `zone_id=NULL` で新規作成 |
 | `200 OK` | 既知のMAC（`pending` / `active`）。`firmware_ver` を更新するのみ。冪等 |
 | `403 Forbidden` | 既知のMACが `revoked` 状態 |
-| `400 Bad Request` | `mac_address` の形式不正 |
+| `400 Bad Request` | `mac_address` の形式不正、または `firmware_ver` が空文字・DB列長（`VARCHAR(20)`）超過 |
 
 ```json
 // 201: 新規作成時（常に pending）
