@@ -57,75 +57,29 @@ GitHub 側は `OAuth Apps` を使う（`GitHub Apps` ではない）。
 
 ### エミュレータの環境変数
 
-docker compose 経由で起動する場合、エミュレータはルートの `.env` から環境変数を読み込む。`DEVICE_API_KEY` を設定しておけば動作する（デフォルト値 `dev-api-key-001` は `supabase/seed.sql` に登録済み）。
+キーレス登録（案B/TOFU方式）により APIキーは不要。docker compose 経由で起動する場合、エミュレータはルートの `.env` から環境変数を読み込む。`DEVICE_MAC` で擬似MACアドレスを設定する（デフォルト値 `AA:BB:CC:DD:EE:01` は `supabase/seed.sql` の開発用 active デバイスと同じ値）。
 
 ```bash
 # ルートの .env（初回セットアップ時に cp .env.example .env で作成済み）
-DEVICE_API_KEY=dev-api-key-001
+DEVICE_MAC=AA:BB:CC:DD:EE:01
 ```
 
 `ts-node` でホストから直接起動する場合はインラインで指定する。
 
 ```bash
-DEVICE_API_KEY=dev-api-key-001 SUPABASE_URL=http://localhost:54321 npx ts-node emulator/src/index.ts
+DEVICE_MAC=AA:BB:CC:DD:EE:01 SUPABASE_URL=http://localhost:54321 npx ts-node emulator/src/index.ts
 ```
+
+エミュレータは `POST /start` 時に `POST /functions/v1/enroll` を実行し（実機ESP32の起動時挙動を模倣）、成功（2xx）した場合のみ `readings` の送信を開始する。未知の MAC の場合は `pending` デバイスとして新規作成されるため、ダッシュボードで承認（active化）するまで `readings` は 403 になる（ログに承認待ちである旨が出力される）。
 
 ### 制御エンドポイント
 
 | メソッド | パス | 説明 |
 |---|---|---|
-| `POST` | `/start` | 送信を開始する |
+| `POST` | `/start` | `enroll` を実行し、成功した場合のみ送信を開始する |
 | `POST` | `/stop` | 送信を停止する |
 | `GET` | `/status` | 現在の状態と送信間隔を返す |
 | `POST` | `/start-batch` | バッチ送信テスト（`count` パラメータで件数を指定、最大20） |
-
-### GitHubログインユーザーとして送信する
-
-通常のエミュレータは `DEVICE_API_KEY` で送信するが、GitHub OAuth などでログインしたユーザーの JWT トークンを設定すると、そのユーザーとして送信できる。
-
-#### ステップ 1: JWT トークンを取得する
-
-**方法 A: Supabase Studio から取得する**
-
-1. ブラウザで Supabase Studio（`http://localhost:54323`）を開く
-2. 左メニューから **Authentication > Users** を選択する
-3. 対象ユーザーの行にある **...** メニューをクリックし、**Copy JWT** を選択する
-
-**方法 B: ブラウザの DevTools から取得する**
-
-> **注意:** この操作は開発環境（ローカル）でのみ実施すること。本番環境のブラウザで同様の操作を行うと、実際のユーザーのトークンが漏洩するリスクがあるため絶対に行わないこと。
-
-1. Next.jsダッシュボード（`http://localhost:3000`）に GitHub OAuth でログインする
-2. DevTools を開き、**Application** タブ → **Cookies** → `http://localhost:3000` を選択する
-3. `sb-*-auth-token` という名前のクッキーを見つける
-4. その値は Base64 エンコードされた JSON なので、DevTools コンソールで以下を実行して `access_token` を取り出す
-
-```js
-const raw = document.cookie
-  .split('; ')
-  .find(c => c.startsWith('sb-'))
-  ?.split('=')
-  .slice(1)
-  .join('=');
-const token = JSON.parse(decodeURIComponent(raw));
-console.log(token.access_token);
-```
-
-> または、DevTools の **Application > Local Storage** に `sb-*-auth-token` が保存されている場合は、そこから `access_token` フィールドの値をコピーする。
-
-#### ステップ 2: ルートの .env に設定してエミュレータを再起動する
-
-```bash
-# ルートの .env に取得したトークンを設定する
-USER_JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# エミュレータコンテナを再起動する
-docker compose up -d --force-recreate emulator
-```
-
-再起動後のログに `Using USER_JWT_TOKEN as Bearer token (login user mode).` と表示されれば設定完了。
-
-> **注意:** JWT トークンには有効期限がある（デフォルト1時間）。期限切れの場合は再度ログインして新しいトークンを取得すること。
 
 ---
 
